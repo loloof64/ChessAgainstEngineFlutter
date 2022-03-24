@@ -419,6 +419,106 @@ class _MyHomePageState extends State<MyHomePage> {
     _updateHistoryChildrenWidgets();
   }
 
+  void _requestGotoFirst() {
+    if (_gameInProgress) return;
+    setState(() {
+      _lastMoveArrow = null;
+      _selectedHistoryNode = null;
+      _gameLogic = bishop.Game(
+        variant: bishop.Variant.standard(),
+        fen: _startPosition,
+      );
+    });
+    _updateHistoryChildrenWidgets();
+  }
+
+  void _requestGotoPrevious() {
+    if (_gameInProgress) return;
+    var previousNode = _gameHistoryTree;
+    var newSelectedNode = previousNode;
+    if (previousNode != null) {
+      while (previousNode?.next != _selectedHistoryNode) {
+        previousNode = previousNode?.next != null
+            ? HistoryNode.from(previousNode!.next!)
+            : null;
+        if (previousNode?.relatedMove != null) newSelectedNode = previousNode;
+      }
+      if (newSelectedNode?.relatedMove != null) {
+        setState(() {
+          _lastMoveArrow = BoardArrow(
+            from: newSelectedNode!.relatedMove!.from.toString(),
+            to: newSelectedNode.relatedMove!.to.toString(),
+            color: Colors.blueAccent,
+          );
+          _selectedHistoryNode = newSelectedNode;
+          _gameLogic = bishop.Game(
+            variant: bishop.Variant.standard(),
+            fen: newSelectedNode.fen,
+          );
+        });
+        _updateHistoryChildrenWidgets();
+      }
+    }
+  }
+
+  void _requestGotoNext() {
+    if (_gameInProgress) return;
+    var nextNode = _selectedHistoryNode != null
+        ? _selectedHistoryNode!.next
+        : _gameHistoryTree;
+    if (nextNode != null) {
+      while (nextNode != null && nextNode.relatedMove == null) {
+        nextNode = nextNode.next;
+      }
+      if (nextNode != null && nextNode.relatedMove != null) {
+        setState(() {
+          _lastMoveArrow = BoardArrow(
+            from: nextNode!.relatedMove!.from.toString(),
+            to: nextNode.relatedMove!.to.toString(),
+            color: Colors.blueAccent,
+          );
+          _selectedHistoryNode = nextNode;
+          _gameLogic = bishop.Game(
+            variant: bishop.Variant.standard(),
+            fen: nextNode.fen,
+          );
+        });
+        _updateHistoryChildrenWidgets();
+      }
+    }
+  }
+
+  void _requestGotoLast() {
+    if (_gameInProgress) return;
+    var nextNode = _selectedHistoryNode != null
+        ? _selectedHistoryNode!.next
+        : _gameHistoryTree;
+    var newSelectedNode = nextNode;
+
+    while (true) {
+      nextNode =
+          nextNode?.next != null ? HistoryNode.from(nextNode!.next!) : null;
+      if (nextNode == null) break;
+      if (nextNode.fen != null) {
+        newSelectedNode = nextNode;
+      }
+    }
+
+    setState(() {
+      _lastMoveArrow = BoardArrow(
+        from: newSelectedNode!.relatedMove!.from.toString(),
+        to: newSelectedNode.relatedMove!.to.toString(),
+        color: Colors.blueAccent,
+      );
+      _selectedHistoryNode = newSelectedNode;
+    });
+    _updateHistoryChildrenWidgets();
+    _gameLogic = bishop.Game(
+      variant: bishop.Variant.standard(),
+      fen: newSelectedNode?.fen,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -463,6 +563,10 @@ class _MyHomePageState extends State<MyHomePage> {
               ChessHistory(
                 historyTree: _gameHistoryTree,
                 children: _historyWidgetsTree,
+                requestGotoFirst: _requestGotoFirst,
+                requestGotoPrevious: _requestGotoPrevious,
+                requestGotoNext: _requestGotoNext,
+                requestGotoLast: _requestGotoLast,
               ),
             ],
           ),

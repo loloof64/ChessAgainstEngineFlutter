@@ -22,24 +22,75 @@ import '../logic/history/history_builder.dart';
 class ChessHistory extends StatelessWidget {
   final HistoryNode? historyTree;
   final List<Widget> children;
+
+  final void Function() requestGotoFirst;
+  final void Function() requestGotoPrevious;
+  final void Function() requestGotoNext;
+  final void Function() requestGotoLast;
+
   const ChessHistory({
     Key? key,
     required this.historyTree,
     required this.children,
+    required this.requestGotoFirst,
+    required this.requestGotoPrevious,
+    required this.requestGotoNext,
+    required this.requestGotoLast,
   }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
     return Expanded(
-      child: Container(
-        color: Colors.amber[300],
-        child: SingleChildScrollView(
-          child: Wrap(
-            spacing: 10,
-            runSpacing: 6,
-            children: children,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: <Widget>[
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              ElevatedButton(
+                onPressed: requestGotoFirst,
+                child: const Icon(Icons.first_page),
+                style: ElevatedButton.styleFrom(
+                  shape: const CircleBorder(),
+                ),
+              ),
+              ElevatedButton(
+                onPressed: requestGotoPrevious,
+                child: const Icon(Icons.arrow_back),
+                style: ElevatedButton.styleFrom(
+                  shape: const CircleBorder(),
+                ),
+              ),
+              ElevatedButton(
+                onPressed: requestGotoNext,
+                child: const Icon(Icons.arrow_forward),
+                style: ElevatedButton.styleFrom(
+                  shape: const CircleBorder(),
+                ),
+              ),
+              ElevatedButton(
+                onPressed: requestGotoLast,
+                child: const Icon(Icons.last_page),
+                style: ElevatedButton.styleFrom(
+                  shape: const CircleBorder(),
+                ),
+              ),
+            ],
           ),
-        ),
+          Expanded(
+            child: Container(
+              color: Colors.amber[300],
+              child: SingleChildScrollView(
+                child: Wrap(
+                  spacing: 10,
+                  runSpacing: 6,
+                  children: children,
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
