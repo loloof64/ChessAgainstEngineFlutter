@@ -8,6 +8,8 @@ game:
   stop_game_title: "Stop game ?"
   stop_game_msg: "Do you want to stop current game ?"
   stopped: "Game stopped."
+  restart_game_title: "New game ?"
+  restart_game_msg: "Do you want to finish current game and start a new one ?"
 game_termination:
     black_checkmate_white: "Black has won by checkmate."
     white_checkmate_black: "White has won by checkmate."

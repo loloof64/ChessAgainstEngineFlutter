@@ -53,6 +53,10 @@ class MyApp extends StatelessWidget {
   }
 }
 
+const defaultPosition =
+    'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1';
+const emptyPosition = '8/8/8/8/8/8/8/8 w - - 0 1';
+
 class MyHomePage extends StatefulWidget {
   const MyHomePage({Key? key}) : super(key: key);
 
@@ -61,8 +65,8 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
-  bishop.Game _gameLogic = bishop.Game(
-      variant: bishop.Variant.standard(), fen: '8/8/8/8/8/8/8/8 w - - 0 1');
+  bishop.Game _gameLogic =
+      bishop.Game(variant: bishop.Variant.standard(), fen: emptyPosition);
   BoardColor _orientation = BoardColor.white;
   PlayerType _whitePlayerType = PlayerType.computer;
   PlayerType _blackPlayerType = PlayerType.computer;
@@ -70,8 +74,6 @@ class _MyHomePageState extends State<MyHomePage> {
   HistoryNode? _currentGameHistoryNode;
   HistoryNode? _selectedHistoryNode;
   List<Widget> _historyWidgetsTree = [];
-  static const defaultPosition =
-      'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1';
   final _startPosition = defaultPosition;
   bool _gameStart = false;
   bool _gameInProgress = false;
@@ -356,6 +358,47 @@ class _MyHomePageState extends State<MyHomePage> {
     );
   }
 
+  void _startNewGameConfirmationAction() {
+    Navigator.of(context).pop();
+    _startNewGame();
+  }
+
+  void _purposeRestartGame() {
+    final isEmptyPosition = _gameLogic.fen == emptyPosition;
+    if (isEmptyPosition) {
+      _startNewGame();
+      return;
+    }
+
+    showDialog(
+      context: context,
+      builder: (BuildContext innerCtx) {
+        return AlertDialog(
+          title: I18nText('game.restart_game_title'),
+          content: I18nText('game.restart_game_msg'),
+          actions: [
+            DialogActionButton(
+              onPressed: _startNewGameConfirmationAction,
+              textContent: I18nText(
+                'buttons.ok',
+              ),
+              backgroundColor: Colors.tealAccent,
+              textColor: Colors.white,
+            ),
+            DialogActionButton(
+              onPressed: () => Navigator.of(context).pop(),
+              textContent: I18nText(
+                'buttons.cancel',
+              ),
+              textColor: Colors.white,
+              backgroundColor: Colors.redAccent,
+            )
+          ],
+        );
+      },
+    );
+  }
+
   void onMoveDoneUpdateRequest({required Move moveDone}) {}
 
   @override
@@ -365,7 +408,7 @@ class _MyHomePageState extends State<MyHomePage> {
         title: I18nText('app.title'),
         actions: [
           IconButton(
-            onPressed: _startNewGame,
+            onPressed: _purposeRestartGame,
             icon: const Icon(Icons.add),
           ),
           IconButton(

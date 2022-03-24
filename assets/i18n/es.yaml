@@ -8,6 +8,8 @@ game:
   stop_game_title: "¿Detener el juego?"
   stop_game_msg: "¿Quieres detener el juego actual?"
   stopped: "Juego terminado."
+  restart_game_title: "¿Nuevo juego?"
+  restart_game_msg: "¿Quiere detener el juego actual y comenzar uno nuevo?"
 game_termination:
     black_checkmate_white: "Los Negros ha ganado por jaque mate."
     white_checkmate_black: "Los Blancos ha ganado por jaque mate."
