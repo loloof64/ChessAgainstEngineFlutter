@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:simple_chess_board/models/board_arrow.dart';
 import 'package:simple_chess_board/simple_chess_board.dart';
 import 'package:chess_vectors_flutter/chess_vectors_flutter.dart';
 import 'package:bishop/bishop.dart' as bishop;
@@ -66,12 +67,14 @@ class _MyHomePageState extends State<MyHomePage> {
   PlayerType _blackPlayerType = PlayerType.computer;
   HistoryNode? _gameHistoryTree;
   HistoryNode? _currentGameHistoryNode;
+  HistoryNode? _selectedHistoryNode;
   List<Widget> _historyWidgetsTree = [];
   static const defaultPosition =
       'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1';
   final _startPosition = defaultPosition;
   bool _gameStart = false;
   bool _gameInProgress = false;
+  BoardArrow? _lastMoveArrow;
 
   /*
     Must be called after a move has just been
@@ -100,9 +103,10 @@ class _MyHomePageState extends State<MyHomePage> {
       final fan = san.toFan(whiteMove: !whiteMove);
       final relatedMoveFromSquareIndex =
           CellIndexConverter(lastPlayedMove!.from)
-              .convertSquareIndexFromChessLib();
-      final relatedMoveToSquareIndex = CellIndexConverter(lastPlayedMove.to)
-          .convertSquareIndexFromChessLib();
+              .convertSquareIndexFromBishop();
+      final relatedMoveToSquareIndex =
+          CellIndexConverter(lastPlayedMove.to).convertSquareIndexFromBishop();
+
       final relatedMove = Move(
         from: Cell.fromSquareIndex(relatedMoveFromSquareIndex),
         to: Cell.fromSquareIndex(relatedMoveToSquareIndex),
@@ -164,6 +168,12 @@ class _MyHomePageState extends State<MyHomePage> {
         final nextHistoryNode = HistoryNode(caption: gameResultString);
 
         setState(() {
+          _selectedHistoryNode = _currentGameHistoryNode;
+          _lastMoveArrow = BoardArrow(
+            from: _currentGameHistoryNode!.relatedMove!.from.toString(),
+            to: _currentGameHistoryNode!.relatedMove!.to.toString(),
+            color: Colors.blueAccent,
+          );
           _currentGameHistoryNode?.next = nextHistoryNode;
           _currentGameHistoryNode = nextHistoryNode;
         });
@@ -202,6 +212,8 @@ class _MyHomePageState extends State<MyHomePage> {
       final whiteTurn = parts[1] == 'w';
       final moveNumber = parts[5];
       final caption = "$moveNumber${whiteTurn ? '.' : '...'}";
+      _lastMoveArrow = null;
+      _selectedHistoryNode = null;
       _gameHistoryTree = HistoryNode(caption: caption);
       _currentGameHistoryNode = _gameHistoryTree;
     });
@@ -269,6 +281,7 @@ class _MyHomePageState extends State<MyHomePage> {
       if (_gameHistoryTree != null) {
         _historyWidgetsTree = recursivelyBuildWidgetsFromHistoryTree(
           fontSize: 40,
+          selectedHistoryNode: _selectedHistoryNode,
           tree: _gameHistoryTree!,
           onMoveDoneUpdateRequest: onMoveDoneUpdateRequest,
         );
@@ -304,6 +317,7 @@ class _MyHomePageState extends State<MyHomePage> {
               SizedBox(
                 height: 600,
                 child: SimpleChessBoard(
+                    lastMoveToHighlight: _lastMoveArrow,
                     fen: _gameLogic.fen,
                     orientation: _orientation,
                     whitePlayerType: _whitePlayerType,

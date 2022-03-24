@@ -83,6 +83,12 @@ class Cell {
       : this(
             file: File.values[squareIndex % 8],
             rank: Rank.values[squareIndex ~/ 8]);
+
+  @override
+  String toString() {
+    return "${String.fromCharCode('a'.codeUnitAt(0) + file.index)}"
+        "${String.fromCharCode('1'.codeUnitAt(0) + rank.index)}";
+  }
 }
 
 class Move {
@@ -181,15 +187,16 @@ HistoryNode _recursivelyBuildHistoryTreeFromPgnTree(
 }
 
 extension CellIndexConverter on int {
-  int convertSquareIndexFromChessLib() {
+  int convertSquareIndexFromBishop() {
     final file = this % 8;
-    final rank = this ~/ 16;
+    final rank = 7 - this ~/ 16;
     return file + 8 * rank;
   }
 }
 
 List<Widget> recursivelyBuildWidgetsFromHistoryTree({
   required HistoryNode tree,
+  HistoryNode? selectedHistoryNode,
   required double fontSize,
   required void Function({required Move moveDone}) onMoveDoneUpdateRequest,
 }) {
@@ -200,11 +207,18 @@ List<Widget> recursivelyBuildWidgetsFromHistoryTree({
   final currentPosition = currentHistoryNode.fen;
 
   do {
+    final backgroundColor = selectedHistoryNode == currentHistoryNode
+        ? Colors.blueAccent
+        : Colors.transparent;
+    final textColor =
+        selectedHistoryNode == currentHistoryNode ? Colors.white : Colors.black;
     final textComponent = Text(
       currentHistoryNode!.caption,
       style: TextStyle(
         fontSize: fontSize,
         fontFamily: 'FreeSerif',
+        backgroundColor: backgroundColor,
+        color: textColor,
       ),
     );
     result.add(
@@ -242,10 +256,8 @@ Move _getMoveFromSan(
   final boardStateClone = chesslib.Chess.fromFEN(boardState.fen);
   boardStateClone.move(san);
   final boardLogicMove = boardStateClone.undo_move()!;
-  final moveFrom = Cell.fromSquareIndex(
-      boardLogicMove.from.convertSquareIndexFromChessLib());
-  final moveTo =
-      Cell.fromSquareIndex(boardLogicMove.to.convertSquareIndexFromChessLib());
+  final moveFrom = Cell.fromSquareIndex(boardLogicMove.from);
+  final moveTo = Cell.fromSquareIndex(boardLogicMove.to);
 
   return Move(from: moveFrom, to: moveTo);
 }
