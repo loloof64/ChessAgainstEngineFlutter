@@ -1,0 +1,7 @@
+app:
+    title: "Ajedrez contra motor"
+buttons:
+    ok: "De acuerdo"
+    cancel: "Anular"
+game:
+  promotion_dialog_title: "Selecciona la pieza de promoción"

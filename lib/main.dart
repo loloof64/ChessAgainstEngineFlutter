@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:simple_chess_board/models/board_color.dart';
 import 'package:simple_chess_board/simple_chess_board.dart';
 import 'package:chess_vectors_flutter/chess_vectors_flutter.dart';
 import 'package:bishop/bishop.dart' as bishop;
+import 'package:flutter_i18n/loaders/decoders/yaml_decode_strategy.dart';
+import 'package:flutter_i18n/flutter_i18n.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:logger/logger.dart';
 
 void main() {
   runApp(const MyApp());
@@ -15,19 +18,39 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      title: 'Chess against engine',
+      onGenerateTitle: (context) => FlutterI18n.translate(context, 'app.title'),
       theme: ThemeData(
         primarySwatch: Colors.blue,
       ),
-      home: const MyHomePage(title: 'Home'),
+      home: const MyHomePage(),
+      localizationsDelegates: [
+        FlutterI18nDelegate(
+          translationLoader: FileTranslationLoader(
+            basePath: 'assets/i18n',
+            useCountryCode: false,
+            fallbackFile: 'en',
+            decodeStrategies: [YamlDecodeStrategy()],
+          ),
+          missingTranslationHandler: (key, locale) {
+            Logger().w(
+                "--- Missing Key: $key, languageCode: ${locale?.languageCode}");
+          },
+        ),
+        GlobalMaterialLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate
+      ],
+      supportedLocales: const [
+        Locale('en', ''),
+        Locale('fr', ''),
+        Locale('es', ''),
+      ],
     );
   }
 }
 
 class MyHomePage extends StatefulWidget {
-  const MyHomePage({Key? key, required this.title}) : super(key: key);
-
-  final String title;
+  const MyHomePage({Key? key}) : super(key: key);
 
   @override
   State<MyHomePage> createState() => _MyHomePageState();
@@ -79,7 +102,7 @@ class _MyHomePageState extends State<MyHomePage> {
         context: context,
         builder: (_) {
           return AlertDialog(
-            title: const Text('Choose promotion piece'),
+            title: I18nText('game.promotion_dialog_title'),
             alignment: Alignment.center,
             content: FittedBox(
               child: Row(
@@ -119,7 +142,7 @@ class _MyHomePageState extends State<MyHomePage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(widget.title),
+        title: I18nText('app.title'),
         actions: [
           IconButton(
             onPressed: _startNewGame,

@@ -1,0 +1,7 @@
+app:
+    title: "Chess against engine"
+buttons:
+    ok: "OK"
+    cancel: "Cancel"
+game:
+  promotion_dialog_title: "Select the promotion piece"

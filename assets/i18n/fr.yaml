@@ -1,0 +1,7 @@
+app:
+    title: "Echecs contre le moteur"
+buttons:
+    ok: "D'accord"
+    cancel: "Annuler"
+game:
+  promotion_dialog_title: "Choisissez la pièce de promotion"
