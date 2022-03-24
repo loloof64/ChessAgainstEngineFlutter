@@ -1,3 +1,6 @@
+import 'dart:async';
+import 'dart:io';
+import 'dart:convert';
 import 'package:chess_against_engine/screens/settings_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:simple_chess_board/models/board_arrow.dart';
@@ -85,6 +88,7 @@ class _MyHomePageState extends State<MyHomePage> {
   bool _gameInProgress = false;
   BoardArrow? _lastMoveArrow;
   late SharedPreferences _prefs;
+  Process? _engineProcess;
 
   @override
   void initState() {
@@ -92,16 +96,26 @@ class _MyHomePageState extends State<MyHomePage> {
     super.initState();
   }
 
+  @override
+  void dispose() {
+    _engineProcess?.kill();
+    super.dispose();
+  }
+
+  void _processEngineStdOut(String message) {
+    print(message);
+  }
+
+  void _processEngineStdErr(String message) {
+    print(message);
+  }
+
   Future<void> _initPreferences() async {
     _prefs = await SharedPreferences.getInstance();
   }
 
   Future<String?> _loadEnginePath() async {
-    return await _prefs.getString('enginePath');
-  }
-
-  Future<bool> _saveEnginePath(String path) async {
-    return await _prefs.setString('enginePath', path);
+    return _prefs.getString('enginePath');
   }
 
   /*
@@ -241,13 +255,34 @@ class _MyHomePageState extends State<MyHomePage> {
       );
       return;
     }
+    try {
+      _engineProcess = await Process.start(enginePath, []);
+    } on Exception catch (_) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          duration: const Duration(seconds: 2),
+          content: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [I18nText('game.cannot_start_engine')],
+          ),
+        ),
+      );
+      return;
+    }
+    _engineProcess!.stdout
+        .transform(utf8.decoder)
+        .forEach(_processEngineStdOut);
+    _engineProcess!.stdin.writeln('uci');
+
     setState(() {
       _whitePlayerType = PlayerType.computer;
       _blackPlayerType = PlayerType.computer;
       _gameStart = true;
       _gameInProgress = true;
-      _gameLogic =
-          bishop.Game(variant: bishop.Variant.standard(), fen: _startPosition);
+      _gameLogic = bishop.Game(
+        variant: bishop.Variant.standard(),
+        fen: _startPosition,
+      );
       final startPosition = _startPosition;
       final parts = startPosition.split(' ');
       final whiteTurn = parts[1] == 'w';

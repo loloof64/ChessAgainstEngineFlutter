@@ -10,6 +10,7 @@ game:
   stopped: "Partie interrompue."
   restart_game_title: "Nouvelle partie ?"
   restart_game_msg: "Voulez-vous arrêter la partie en cours et en démarrer une nouvelle ?"
+  cannot_start_engine: "Impossible de lancer le moteur configuré !"
 game_termination:
     black_checkmate_white: "Les Noirs gagnent par échec et mat."
     white_checkmate_black: "Les Blancs gagnent par échec et mat."
