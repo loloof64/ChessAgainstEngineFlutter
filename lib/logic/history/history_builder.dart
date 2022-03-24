@@ -84,6 +84,20 @@ class Cell {
             file: File.values[squareIndex % 8],
             rank: Rank.values[squareIndex ~/ 8]);
 
+  factory Cell.from(Cell other) {
+    return Cell(file: other.file, rank: other.rank);
+  }
+
+  @override
+  bool operator ==(Object other) =>
+      other is Cell &&
+      other.runtimeType == runtimeType &&
+      other.file == file &&
+      other.rank == rank;
+
+  @override
+  int get hashCode => file.index + (100 * rank.index);
+
   @override
   String toString() {
     return "${String.fromCharCode('a'.codeUnitAt(0) + file.index)}"
@@ -99,6 +113,19 @@ class Move {
     required this.from,
     required this.to,
   });
+
+  factory Move.from(Move other) =>
+      Move(from: Cell.from(other.from), to: Cell.from(other.to));
+
+  @override
+  bool operator ==(Object other) =>
+      other is Move &&
+      other.runtimeType == runtimeType &&
+      other.from == from &&
+      other.to == to;
+
+  @override
+  int get hashCode => from.hashCode + (10000000000 * to.hashCode);
 }
 
 class HistoryNode {
@@ -116,6 +143,32 @@ class HistoryNode {
   }) {
     variations = <HistoryNode>[];
   }
+
+  factory HistoryNode.from(HistoryNode other) {
+    var result = HistoryNode(
+        caption: other.caption,
+        fen: other.fen,
+        relatedMove:
+            other.relatedMove != null ? Move.from(other.relatedMove!) : null);
+    result.next = other.next != null ? HistoryNode.from(other.next!) : null;
+    result.variations = other.variations;
+    result.result = other.result;
+
+    return result;
+  }
+
+  /*
+  Caption and fen fields are enough to identify a node.
+  */
+  @override
+  bool operator ==(Object other) =>
+      other is HistoryNode &&
+      other.runtimeType == runtimeType &&
+      other.caption == caption &&
+      other.fen == fen;
+
+  @override
+  int get hashCode => fen.hashCode + (10000 * caption.hashCode);
 }
 
 Future<HistoryNode?> buildHistoryTreeFromPgnTree(
@@ -198,13 +251,15 @@ List<Widget> recursivelyBuildWidgetsFromHistoryTree({
   required HistoryNode tree,
   HistoryNode? selectedHistoryNode,
   required double fontSize,
-  required void Function({required Move historyMove}) onHistoryMoveRequested,
+  required void Function({
+    required Move historyMove,
+    required HistoryNode? selectedHistoryNode,
+  })
+      onHistoryMoveRequested,
 }) {
   final result = <Widget>[];
 
   HistoryNode? currentHistoryNode = tree;
-
-  final currentPosition = currentHistoryNode.fen;
 
   do {
     final backgroundColor = selectedHistoryNode == currentHistoryNode
@@ -221,12 +276,21 @@ List<Widget> recursivelyBuildWidgetsFromHistoryTree({
         color: textColor,
       ),
     );
+    final relatedMove = currentHistoryNode.relatedMove != null
+        ? Move.from(currentHistoryNode.relatedMove!)
+        : null;
+    final nodeToRegister = HistoryNode.from(currentHistoryNode);
+
     result.add(
-      currentPosition == null
+      currentHistoryNode.fen == null
           ? textComponent
           : TextButton(
-              onPressed: () => onHistoryMoveRequested(
-                  historyMove: currentHistoryNode!.relatedMove!),
+              onPressed: () {
+                onHistoryMoveRequested(
+                  historyMove: relatedMove!,
+                  selectedHistoryNode: nodeToRegister,
+                );
+              },
               child: textComponent),
     );
 
@@ -245,7 +309,9 @@ List<Widget> recursivelyBuildWidgetsFromHistoryTree({
       }
     }
 
-    currentHistoryNode = currentHistoryNode.next;
+    currentHistoryNode = currentHistoryNode.next != null
+        ? HistoryNode.from(currentHistoryNode.next!)
+        : null;
   } while (currentHistoryNode != null);
 
   return result;

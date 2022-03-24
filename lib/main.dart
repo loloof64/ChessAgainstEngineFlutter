@@ -399,7 +399,25 @@ class _MyHomePageState extends State<MyHomePage> {
     );
   }
 
-  void onHistoryMoveRequested({required Move historyMove}) {}
+  void onHistoryMoveRequested({
+    required Move historyMove,
+    required HistoryNode? selectedHistoryNode,
+  }) {
+    if (_gameInProgress) return;
+    setState(() {
+      _selectedHistoryNode = selectedHistoryNode;
+      _lastMoveArrow = BoardArrow(
+        from: _selectedHistoryNode!.relatedMove!.from.toString(),
+        to: _selectedHistoryNode!.relatedMove!.to.toString(),
+        color: Colors.blueAccent,
+      );
+      _gameLogic = bishop.Game(
+        variant: bishop.Variant.standard(),
+        fen: selectedHistoryNode?.fen,
+      );
+    });
+    _updateHistoryChildrenWidgets();
+  }
 
   @override
   Widget build(BuildContext context) {
