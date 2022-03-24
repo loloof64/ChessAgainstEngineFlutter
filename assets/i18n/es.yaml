@@ -17,3 +17,11 @@ game_termination:
     repetitions: "Empate por tres repeticiones."
     insufficient_material: "Empate por material insuficiente."
     fifty_moves: "Empate por la regla de los 50 movimientos."
+engine:
+    not_configured: "¡Debes configurar la ruta del motor de ajedrez antes!"
+settings:
+    title: "Configuración"
+    select: "Seleccionar"
+    engine_path_label: "Ruta del motor de ajedrez"
+    no_engine: "Sin motor"
+    saved: "Configuración guardada"

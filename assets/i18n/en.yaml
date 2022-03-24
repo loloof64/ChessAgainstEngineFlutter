@@ -17,3 +17,11 @@ game_termination:
     repetitions: "Draw by threefold repetitions."
     insufficient_material: "Draw by insufficient material."
     fifty_moves: "Draw by 50 moves' rule."
+engine:
+    not_configured: "You must configure the chess engine path before !"
+settings:
+    title: "Settings"
+    select: "Select"
+    engine_path_label: "Chess engine path"
+    no_engine: "No engine"
+    saved: "Settings saved"

@@ -1,3 +1,4 @@
+import 'package:chess_against_engine/screens/settings_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:simple_chess_board/models/board_arrow.dart';
 import 'package:simple_chess_board/simple_chess_board.dart';
@@ -7,9 +8,10 @@ import 'package:flutter_i18n/loaders/decoders/yaml_decode_strategy.dart';
 import 'package:flutter_i18n/flutter_i18n.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:logger/logger.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../components/dialog_buttons.dart';
 import '../components/history.dart';
-import '../logic/history/history_builder.dart';
+import '../logic/history/history_builder.dart' hide File;
 
 void main() {
   runApp(const MyApp());
@@ -26,7 +28,6 @@ class MyApp extends StatelessWidget {
       theme: ThemeData(
         primarySwatch: Colors.blue,
       ),
-      home: const MyHomePage(),
       localizationsDelegates: [
         FlutterI18nDelegate(
           translationLoader: FileTranslationLoader(
@@ -49,6 +50,11 @@ class MyApp extends StatelessWidget {
         Locale('fr', ''),
         Locale('es', ''),
       ],
+      initialRoute: '/',
+      routes: {
+        '/': (context) => const MyHomePage(),
+        '/settings': (context) => const SettingsPage(),
+      },
     );
   }
 }
@@ -78,6 +84,25 @@ class _MyHomePageState extends State<MyHomePage> {
   bool _gameStart = false;
   bool _gameInProgress = false;
   BoardArrow? _lastMoveArrow;
+  late SharedPreferences _prefs;
+
+  @override
+  void initState() {
+    _initPreferences();
+    super.initState();
+  }
+
+  Future<void> _initPreferences() async {
+    _prefs = await SharedPreferences.getInstance();
+  }
+
+  Future<String?> _loadEnginePath() async {
+    return await _prefs.getString('enginePath');
+  }
+
+  Future<bool> _saveEnginePath(String path) async {
+    return await _prefs.setString('enginePath', path);
+  }
 
   /*
     Must be called after a move has just been
@@ -202,10 +227,23 @@ class _MyHomePageState extends State<MyHomePage> {
     }
   }
 
-  void _startNewGame() {
+  Future<void> _startNewGame() async {
+    final enginePath = await _loadEnginePath();
+    if (enginePath == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          duration: const Duration(seconds: 3),
+          content: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [I18nText('engine.not_configured')],
+          ),
+        ),
+      );
+      return;
+    }
     setState(() {
-      _whitePlayerType = PlayerType.human;
-      _blackPlayerType = PlayerType.human;
+      _whitePlayerType = PlayerType.computer;
+      _blackPlayerType = PlayerType.computer;
       _gameStart = true;
       _gameInProgress = true;
       _gameLogic =
@@ -519,6 +557,22 @@ class _MyHomePageState extends State<MyHomePage> {
     );
   }
 
+  Future<void> _accessSettings() async {
+    var success = await Navigator.of(context).pushNamed('/settings');
+    if (success == true) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              I18nText('settings.saved'),
+            ],
+          ),
+        ),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -536,6 +590,10 @@ class _MyHomePageState extends State<MyHomePage> {
           IconButton(
             onPressed: _purposeStopGame,
             icon: const Icon(Icons.pan_tool),
+          ),
+          IconButton(
+            onPressed: _accessSettings,
+            icon: const Icon(Icons.settings),
           ),
         ],
       ),

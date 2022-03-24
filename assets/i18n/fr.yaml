@@ -17,3 +17,11 @@ game_termination:
     repetitions: "Nulle par triple répétition."
     insufficient_material: "Nulle par insuffisance matérielle."
     fifty_moves: "Nulle par la règle des 50 coups."
+engine:
+    not_configured: "Vous devez configurer le chemin du moteur d'échecs auparavant !"
+settings:
+    title: "Paramètres"
+    select: "Choisir"
+    engine_path_label: "Chemin du moteur d'échecs"
+    no_engine: "Aucun moteur"
+    saved: "Paramètres sauvegardés"
