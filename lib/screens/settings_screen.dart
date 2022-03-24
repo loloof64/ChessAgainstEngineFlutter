@@ -1,5 +1,3 @@
-import 'dart:io';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_i18n/flutter_i18n.dart';
 import 'package:file_picker/file_picker.dart';
@@ -14,8 +12,7 @@ class SettingsPage extends StatefulWidget {
 }
 
 class _SettingsPageState extends State<SettingsPage> {
-  String? _enginePath = null;
-  String? _editedEnginePath = null;
+  String? _editedEnginePath;
   late SharedPreferences _prefs;
 
   @override
@@ -26,8 +23,9 @@ class _SettingsPageState extends State<SettingsPage> {
 
   Future<void> _initPreferences() async {
     _prefs = await SharedPreferences.getInstance();
-    _enginePath = _loadEnginePath();
-    _editedEnginePath = _enginePath;
+    setState(() {
+      _editedEnginePath = _loadEnginePath();
+    });
   }
 
   String? _loadEnginePath() {
