@@ -86,9 +86,13 @@ class _MyHomePageState extends State<MyHomePage> {
   final _startPosition = defaultPosition;
   bool _gameStart = false;
   bool _gameInProgress = false;
+  bool _uciOk = false;
+  bool _readyOk = false;
+  bool _engineThinking = false;
   BoardArrow? _lastMoveArrow;
   late SharedPreferences _prefs;
   Process? _engineProcess;
+  StreamSubscription<String>? _engineStdOutSubscription;
 
   @override
   void initState() {
@@ -98,16 +102,84 @@ class _MyHomePageState extends State<MyHomePage> {
 
   @override
   void dispose() {
+    _engineStdOutSubscription?.cancel();
     _engineProcess?.kill();
     super.dispose();
   }
 
   void _processEngineStdOut(String message) {
     print(message);
-  }
+    if (message.contains("uciok")) {
+      setState(() {
+        _uciOk = true;
+      });
+      _engineProcess!.stdin.writeln('isready');
+      return;
+    }
+    if (message.contains("readyok")) {
+      setState(() {
+        _readyOk = true;
+      });
+      _makeComputerMove();
+      return;
+    }
+    if (message.contains("bestmove")) {
+      if (!_gameInProgress) return;
+      final bestMoveIndex = message.indexOf("bestmove");
+      final bestMoveMessage = message.substring(bestMoveIndex);
+      final parts = bestMoveMessage.split(" ");
+      final moveAlgebraic = parts[1];
+      final matchingMove = _gameLogic.getMove(moveAlgebraic);
 
-  void _processEngineStdErr(String message) {
-    print(message);
+      if (matchingMove == null) return;
+      final from = moveAlgebraic.substring(0, 2);
+      final to = moveAlgebraic.substring(2, 4);
+
+      setState(() {
+        _gameLogic.makeMove(matchingMove);
+        _lastMoveArrow =
+            BoardArrow(from: from, to: to, color: Colors.blueAccent);
+        _addMoveToHistory();
+        _gameStart = false;
+      });
+
+      if (_gameLogic.gameOver) {
+        final gameResultString = _getGameResultString();
+        final nextHistoryNode = HistoryNode(caption: gameResultString);
+
+        setState(() {
+          _selectedHistoryNode = _currentGameHistoryNode;
+          _lastMoveArrow = BoardArrow(
+            from: _currentGameHistoryNode!.relatedMove!.from.toString(),
+            to: _currentGameHistoryNode!.relatedMove!.to.toString(),
+            color: Colors.blueAccent,
+          );
+          _currentGameHistoryNode?.next = nextHistoryNode;
+          _currentGameHistoryNode = nextHistoryNode;
+        });
+        _updateHistoryChildrenWidgets();
+
+        setState(() {
+          _whitePlayerType = PlayerType.computer;
+          _blackPlayerType = PlayerType.computer;
+          _gameInProgress = false;
+        });
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                _getGameEndedType(),
+              ],
+            ),
+          ),
+        );
+      }
+
+      _updateHistoryChildrenWidgets();
+      _makeComputerMove();
+    }
   }
 
   Future<void> _initPreferences() async {
@@ -116,6 +188,21 @@ class _MyHomePageState extends State<MyHomePage> {
 
   Future<String?> _loadEnginePath() async {
     return _prefs.getString('enginePath');
+  }
+
+  void _makeComputerMove() {
+    if (!_gameInProgress) return;
+    final whiteTurn = _gameLogic.turn == bishop.WHITE;
+    final computerTurn =
+        (whiteTurn && _whitePlayerType == PlayerType.computer) ||
+            (!whiteTurn && _blackPlayerType == PlayerType.computer);
+    if (!computerTurn) return;
+
+    setState(() {
+      _engineThinking = true;
+    });
+    _engineProcess!.stdin.writeln("position fen ${_gameLogic.fen}");
+    _engineProcess!.stdin.writeln("go movetime 2500");
   }
 
   /*
@@ -269,9 +356,15 @@ class _MyHomePageState extends State<MyHomePage> {
       );
       return;
     }
-    _engineProcess!.stdout
-        .transform(utf8.decoder)
-        .forEach(_processEngineStdOut);
+
+    setState(() {
+      _uciOk = false;
+      _readyOk = false;
+      _engineStdOutSubscription = _engineProcess!.stdout
+          .transform(utf8.decoder)
+          .listen(_processEngineStdOut);
+    });
+
     _engineProcess!.stdin.writeln('uci');
 
     setState(() {

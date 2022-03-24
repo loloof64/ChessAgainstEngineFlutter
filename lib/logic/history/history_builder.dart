@@ -88,6 +88,13 @@ class Cell {
     return Cell(file: other.file, rank: other.rank);
   }
 
+  factory Cell.fromString(String squareStr) {
+    final file = File.values[squareStr.codeUnitAt(0) - 'a'.codeUnitAt(0)];
+    final rank = Rank.values[squareStr.codeUnitAt(1) - '1'.codeUnitAt(0)];
+
+    return Cell(file: file, rank: rank);
+  }
+
   @override
   bool operator ==(Object other) =>
       other is Cell &&
