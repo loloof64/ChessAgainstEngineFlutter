@@ -198,7 +198,7 @@ List<Widget> recursivelyBuildWidgetsFromHistoryTree({
   required HistoryNode tree,
   HistoryNode? selectedHistoryNode,
   required double fontSize,
-  required void Function({required Move moveDone}) onMoveDoneUpdateRequest,
+  required void Function({required Move historyMove}) onHistoryMoveRequested,
 }) {
   final result = <Widget>[];
 
@@ -225,8 +225,8 @@ List<Widget> recursivelyBuildWidgetsFromHistoryTree({
       currentPosition == null
           ? textComponent
           : TextButton(
-              onPressed: () => onMoveDoneUpdateRequest(
-                  moveDone: currentHistoryNode!.relatedMove!),
+              onPressed: () => onHistoryMoveRequested(
+                  historyMove: currentHistoryNode!.relatedMove!),
               child: textComponent),
     );
 
@@ -239,7 +239,7 @@ List<Widget> recursivelyBuildWidgetsFromHistoryTree({
         final currentVariationResult = recursivelyBuildWidgetsFromHistoryTree(
           tree: currentVariation,
           fontSize: fontSize,
-          onMoveDoneUpdateRequest: onMoveDoneUpdateRequest,
+          onHistoryMoveRequested: onHistoryMoveRequested,
         );
         result.addAll(currentVariationResult);
       }

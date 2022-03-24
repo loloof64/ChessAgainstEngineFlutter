@@ -286,7 +286,7 @@ class _MyHomePageState extends State<MyHomePage> {
           fontSize: 40,
           selectedHistoryNode: _selectedHistoryNode,
           tree: _gameHistoryTree!,
-          onMoveDoneUpdateRequest: onMoveDoneUpdateRequest,
+          onHistoryMoveRequested: onHistoryMoveRequested,
         );
       }
     });
@@ -399,7 +399,7 @@ class _MyHomePageState extends State<MyHomePage> {
     );
   }
 
-  void onMoveDoneUpdateRequest({required Move moveDone}) {}
+  void onHistoryMoveRequested({required Move historyMove}) {}
 
   @override
   Widget build(BuildContext context) {
