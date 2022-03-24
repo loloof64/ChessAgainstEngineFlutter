@@ -5,6 +5,9 @@ buttons:
     cancel: "Anular"
 game:
   promotion_dialog_title: "Selecciona la pieza de promoción"
+  stop_game_title: "¿Detener el juego?"
+  stop_game_msg: "¿Quieres detener el juego actual?"
+  stopped: "Juego terminado."
 game_termination:
     black_checkmate_white: "Los Negros ha ganado por jaque mate."
     white_checkmate_black: "Los Blancos ha ganado por jaque mate."

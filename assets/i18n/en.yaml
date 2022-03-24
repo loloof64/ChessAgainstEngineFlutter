@@ -5,6 +5,9 @@ buttons:
     cancel: "Cancel"
 game:
   promotion_dialog_title: "Select the promotion piece"
+  stop_game_title: "Stop game ?"
+  stop_game_msg: "Do you want to stop current game ?"
+  stopped: "Game stopped."
 game_termination:
     black_checkmate_white: "Black has won by checkmate."
     white_checkmate_black: "White has won by checkmate."

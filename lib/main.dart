@@ -7,6 +7,7 @@ import 'package:flutter_i18n/loaders/decoders/yaml_decode_strategy.dart';
 import 'package:flutter_i18n/flutter_i18n.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:logger/logger.dart';
+import '../components/dialog_buttons.dart';
 import '../components/history.dart';
 import '../logic/history/history_builder.dart';
 
@@ -289,6 +290,72 @@ class _MyHomePageState extends State<MyHomePage> {
     });
   }
 
+  void _purposeStopGame() {
+    if (!_gameInProgress) return;
+    showDialog(
+        context: context,
+        builder: (BuildContext innerCtx) {
+          return AlertDialog(
+            title: I18nText('game.stop_game_title'),
+            content: I18nText('game.stop_game_msg'),
+            actions: [
+              DialogActionButton(
+                onPressed: _stopCurrentGameConfirmationAction,
+                textContent: I18nText(
+                  'buttons.ok',
+                ),
+                backgroundColor: Colors.tealAccent,
+                textColor: Colors.white,
+              ),
+              DialogActionButton(
+                onPressed: () => Navigator.of(context).pop(),
+                textContent: I18nText(
+                  'buttons.cancel',
+                ),
+                textColor: Colors.white,
+                backgroundColor: Colors.redAccent,
+              )
+            ],
+          );
+        });
+  }
+
+  void _stopCurrentGameConfirmationAction() {
+    Navigator.of(context).pop();
+    _stopCurrentGame();
+  }
+
+  void _stopCurrentGame() {
+    final nextHistoryNode = HistoryNode(caption: '*');
+    setState(() {
+      _lastMoveArrow = BoardArrow(
+        from: _currentGameHistoryNode!.relatedMove!.from.toString(),
+        to: _currentGameHistoryNode!.relatedMove!.to.toString(),
+        color: Colors.blueAccent,
+      );
+      _selectedHistoryNode = _currentGameHistoryNode;
+      _currentGameHistoryNode?.next = nextHistoryNode;
+      _currentGameHistoryNode = nextHistoryNode;
+      _gameInProgress = false;
+      _whitePlayerType = PlayerType.computer;
+      _blackPlayerType = PlayerType.computer;
+    });
+    _updateHistoryChildrenWidgets();
+    /*
+    setState(() {
+      _engineThinking = false;
+    });
+    */
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [I18nText('game.stopped')],
+        ),
+      ),
+    );
+  }
+
   void onMoveDoneUpdateRequest({required Move moveDone}) {}
 
   @override
@@ -304,6 +371,10 @@ class _MyHomePageState extends State<MyHomePage> {
           IconButton(
             onPressed: _toggleBoardOrientation,
             icon: const Icon(Icons.swap_vert),
+          ),
+          IconButton(
+            onPressed: _purposeStopGame,
+            icon: const Icon(Icons.pan_tool),
           ),
         ],
       ),

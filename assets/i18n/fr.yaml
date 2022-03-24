@@ -5,6 +5,9 @@ buttons:
     cancel: "Annuler"
 game:
   promotion_dialog_title: "Choisissez la pièce de promotion"
+  stop_game_title: "Terminer la partie?"
+  stop_game_msg: "Souhaitez-vous interrompre la partie en cours ?"
+  stopped: "Partie interrompue."
 game_termination:
     black_checkmate_white: "Les Noirs gagnent par échec et mat."
     white_checkmate_black: "Les Blancs gagnent par échec et mat."
