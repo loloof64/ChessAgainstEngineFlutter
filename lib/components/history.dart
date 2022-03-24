@@ -32,7 +32,7 @@ class ChessHistory extends StatelessWidget {
   Widget build(BuildContext context) {
     return Expanded(
       child: Container(
-        color: Colors.amber[100],
+        color: Colors.amber[300],
         child: SingleChildScrollView(
           child: Wrap(
             spacing: 10,

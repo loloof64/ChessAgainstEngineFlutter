@@ -21,10 +21,10 @@ import 'package:flutter/material.dart';
 
 extension FanConverter on String {
   String toFan({required bool whiteMove}) {
-    final piecesRefs = "NBRQK";
+    const piecesRefs = "NBRQK";
     String result = this;
 
-    final thisAsIndexedArray = this.split('').asMap();
+    final thisAsIndexedArray = split('').asMap();
     var firstOccurenceIndex = -1;
     for (var index = 0; index < thisAsIndexedArray.length; index++) {
       final element = thisAsIndexedArray[index]!;
@@ -36,7 +36,7 @@ extension FanConverter on String {
 
     if (firstOccurenceIndex > -1) {
       final element = thisAsIndexedArray[firstOccurenceIndex];
-      var replacement;
+      dynamic replacement;
       switch (element) {
         case 'N':
           replacement = whiteMove ? "\u2658" : "\u265e";
@@ -57,8 +57,8 @@ extension FanConverter on String {
           throw Exception("Unrecognized piece char $element into SAN $this");
       }
 
-      final firstPart = this.substring(0, firstOccurenceIndex);
-      final lastPart = this.substring(firstOccurenceIndex + 1);
+      final firstPart = substring(0, firstOccurenceIndex);
+      final lastPart = substring(firstOccurenceIndex + 1);
 
       result = "$firstPart$replacement$lastPart";
     }
@@ -67,7 +67,7 @@ extension FanConverter on String {
   }
 }
 
-enum File { file_a, file_b, file_c, file_d, file_e, file_f, file_g, file_h }
+enum File { fileA, fileB, fileC, fileD, fileE, fileF, fileG, fileH }
 
 enum Rank { rank_1, rank_2, rank_3, rank_4, rank_5, rank_6, rank_7, rank_8 }
 
@@ -75,7 +75,10 @@ class Cell {
   final File file;
   final Rank rank;
 
-  const Cell({required this.file, required this.rank});
+  const Cell({
+    required this.file,
+    required this.rank,
+  });
   Cell.fromSquareIndex(int squareIndex)
       : this(
             file: File.values[squareIndex % 8],
@@ -86,7 +89,10 @@ class Move {
   final Cell from;
   final Cell to;
 
-  const Move({required this.from, required this.to});
+  const Move({
+    required this.from,
+    required this.to,
+  });
 }
 
 class HistoryNode {
@@ -99,12 +105,10 @@ class HistoryNode {
 
   HistoryNode({
     required this.caption,
-    this.next = null,
-    this.fen = null,
-    this.relatedMove = null,
-    this.result = null,
+    this.fen,
+    this.relatedMove,
   }) {
-    this.variations = <HistoryNode>[];
+    variations = <HistoryNode>[];
   }
 }
 
@@ -113,9 +117,7 @@ Future<HistoryNode?> buildHistoryTreeFromPgnTree(
   return Future(() {
     final pgnMoves = singleGamePgnTree['moves'];
     final startPositionTag = singleGamePgnTree['tags']['FEN'];
-    final startPosition = startPositionTag != null
-        ? startPositionTag
-        : chesslib.Chess.DEFAULT_POSITION;
+    final startPosition = startPositionTag ?? chesslib.Chess.DEFAULT_POSITION;
     final boardState = chesslib.Chess.fromFEN(startPosition);
     final result = _recursivelyBuildHistoryTreeFromPgnTree(
         pgnNodes: pgnMoves, boardState: boardState);
@@ -200,7 +202,10 @@ List<Widget> recursivelyBuildWidgetsFromHistoryTree({
   do {
     final textComponent = Text(
       currentHistoryNode!.caption,
-      style: TextStyle(fontSize: fontSize),
+      style: TextStyle(
+        fontSize: fontSize,
+        fontFamily: 'FreeSerif',
+      ),
     );
     result.add(
       currentPosition == null
@@ -216,14 +221,14 @@ List<Widget> recursivelyBuildWidgetsFromHistoryTree({
     }
 
     if (currentHistoryNode.variations.isNotEmpty) {
-      currentHistoryNode.variations.forEach((currentVariation) {
+      for (var currentVariation in currentHistoryNode.variations) {
         final currentVariationResult = recursivelyBuildWidgetsFromHistoryTree(
           tree: currentVariation,
           fontSize: fontSize,
           onMoveDoneUpdateRequest: onMoveDoneUpdateRequest,
         );
         result.addAll(currentVariationResult);
-      });
+      }
     }
 
     currentHistoryNode = currentHistoryNode.next;

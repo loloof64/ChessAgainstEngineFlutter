@@ -6,6 +6,8 @@ import 'package:flutter_i18n/loaders/decoders/yaml_decode_strategy.dart';
 import 'package:flutter_i18n/flutter_i18n.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:logger/logger.dart';
+import '../components/history.dart';
+import '../logic/history/history_builder.dart';
 
 void main() {
   runApp(const MyApp());
@@ -62,6 +64,61 @@ class _MyHomePageState extends State<MyHomePage> {
   BoardColor _orientation = BoardColor.white;
   PlayerType _whitePlayerType = PlayerType.computer;
   PlayerType _blackPlayerType = PlayerType.computer;
+  HistoryNode? _gameHistoryTree;
+  HistoryNode? _currentGameHistoryNode;
+  List<Widget> _historyWidgetsTree = [];
+  static const defaultPosition =
+      'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1';
+  final _startPosition = defaultPosition;
+  bool _gameStart = false;
+
+  /*
+    Must be called after a move has just been
+    added to _gameLogic
+    Do not update state itself.
+  */
+  void _addMoveToHistory() {
+    if (_currentGameHistoryNode != null) {
+      final whiteMove = _gameLogic.turn == bishop.WHITE;
+      final lastPlayedMove = _gameLogic.history.last.move;
+
+      /*
+      We need to know if it was white move before the move which
+      we want to add history node(s).
+      */
+      if (!whiteMove && !_gameStart) {
+        final moveNumberCaption = "${_gameLogic.fen.split(' ')[5]}.";
+        final nextHistoryNode = HistoryNode(caption: moveNumberCaption);
+        _currentGameHistoryNode?.next = nextHistoryNode;
+        _currentGameHistoryNode = nextHistoryNode;
+      }
+
+      final san = _gameLogic.sanMoves().last;
+
+      // Move has been played: we need to revert player turn for the SAN.
+      final fan = san.toFan(whiteMove: !whiteMove);
+      final relatedMoveFromSquareIndex =
+          CellIndexConverter(lastPlayedMove!.from)
+              .convertSquareIndexFromChessLib();
+      final relatedMoveToSquareIndex = CellIndexConverter(lastPlayedMove.to)
+          .convertSquareIndexFromChessLib();
+      final relatedMove = Move(
+        from: Cell.fromSquareIndex(relatedMoveFromSquareIndex),
+        to: Cell.fromSquareIndex(relatedMoveToSquareIndex),
+      );
+
+      final nextHistoryNode = HistoryNode(
+        caption: fan,
+        fen: _gameLogic.fen,
+        relatedMove: relatedMove,
+      );
+      setState(() {
+        _currentGameHistoryNode?.next = nextHistoryNode;
+        _currentGameHistoryNode = nextHistoryNode;
+      });
+      _updateHistoryChildrenWidgets();
+    }
+  }
 
   void _tryMakingMove({required ShortMove move}) {
     final moveAlgebraic =
@@ -70,7 +127,10 @@ class _MyHomePageState extends State<MyHomePage> {
     if (matchingMove != null) {
       setState(() {
         _gameLogic.makeMove(matchingMove);
+        _addMoveToHistory();
+        _gameStart = false;
       });
+      _updateHistoryChildrenWidgets();
     }
   }
 
@@ -78,8 +138,18 @@ class _MyHomePageState extends State<MyHomePage> {
     setState(() {
       _whitePlayerType = PlayerType.human;
       _blackPlayerType = PlayerType.human;
-      _gameLogic = bishop.Game(variant: bishop.Variant.standard());
+      _gameStart = true;
+      _gameLogic =
+          bishop.Game(variant: bishop.Variant.standard(), fen: _startPosition);
+      final startPosition = _startPosition;
+      final parts = startPosition.split(' ');
+      final whiteTurn = parts[1] == 'w';
+      final moveNumber = parts[5];
+      final caption = "$moveNumber${whiteTurn ? '.' : '...'}";
+      _gameHistoryTree = HistoryNode(caption: caption);
+      _currentGameHistoryNode = _gameHistoryTree;
     });
+    _updateHistoryChildrenWidgets();
   }
 
   void _toggleBoardOrientation() {
@@ -138,6 +208,20 @@ class _MyHomePageState extends State<MyHomePage> {
         });
   }
 
+  void _updateHistoryChildrenWidgets() {
+    setState(() {
+      if (_gameHistoryTree != null) {
+        _historyWidgetsTree = recursivelyBuildWidgetsFromHistoryTree(
+          fontSize: 40,
+          tree: _gameHistoryTree!,
+          onMoveDoneUpdateRequest: onMoveDoneUpdateRequest,
+        );
+      }
+    });
+  }
+
+  void onMoveDoneUpdateRequest({required Move moveDone}) {}
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -155,20 +239,31 @@ class _MyHomePageState extends State<MyHomePage> {
         ],
       ),
       body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: <Widget>[
-            SizedBox(
-              height: 600,
-              child: SimpleChessBoard(
-                  fen: _gameLogic.fen,
-                  orientation: _orientation,
-                  whitePlayerType: _whitePlayerType,
-                  blackPlayerType: _blackPlayerType,
-                  onMove: _tryMakingMove,
-                  onPromote: _handlePromotion),
-            ),
-          ],
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: <Widget>[
+              SizedBox(
+                height: 600,
+                child: SimpleChessBoard(
+                    fen: _gameLogic.fen,
+                    orientation: _orientation,
+                    whitePlayerType: _whitePlayerType,
+                    blackPlayerType: _blackPlayerType,
+                    onMove: _tryMakingMove,
+                    onPromote: _handlePromotion),
+              ),
+              const SizedBox(
+                width: 30,
+              ),
+              ChessHistory(
+                historyTree: _gameHistoryTree,
+                children: _historyWidgetsTree,
+              ),
+            ],
+          ),
         ),
       ),
     );
