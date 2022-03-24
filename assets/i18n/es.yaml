@@ -5,3 +5,10 @@ buttons:
     cancel: "Anular"
 game:
   promotion_dialog_title: "Selecciona la pieza de promoción"
+game_termination:
+    black_checkmate_white: "Los Negros ha ganado por jaque mate."
+    white_checkmate_black: "Los Blancos ha ganado por jaque mate."
+    stalemate: "Empate por estancamiento."
+    repetitions: "Empate por tres repeticiones."
+    insufficient_material: "Empate por material insuficiente."
+    fifty_moves: "Empate por la regla de los 50 movimientos."

@@ -5,3 +5,10 @@ buttons:
     cancel: "Cancel"
 game:
   promotion_dialog_title: "Select the promotion piece"
+game_termination:
+    black_checkmate_white: "Black has won by checkmate."
+    white_checkmate_black: "White has won by checkmate."
+    stalemate: "Draw by stalemate."
+    repetitions: "Draw by threefold repetitions."
+    insufficient_material: "Draw by insufficient material."
+    fifty_moves: "Draw by 50 moves' rule."

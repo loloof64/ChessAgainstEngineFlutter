@@ -71,6 +71,7 @@ class _MyHomePageState extends State<MyHomePage> {
       'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1';
   final _startPosition = defaultPosition;
   bool _gameStart = false;
+  bool _gameInProgress = false;
 
   /*
     Must be called after a move has just been
@@ -120,6 +121,34 @@ class _MyHomePageState extends State<MyHomePage> {
     }
   }
 
+  String _getGameResultString() {
+    if (_gameLogic.checkmate) {
+      return _gameLogic.turn == bishop.WHITE ? '0-1' : '1-0';
+    }
+    if (_gameLogic.inDraw) {
+      return '1/2-1/2';
+    }
+    return '*';
+  }
+
+  Widget _getGameEndedType() {
+    dynamic result;
+    if (_gameLogic.checkmate) {
+      result = (_gameLogic.turn == bishop.WHITE)
+          ? I18nText('game_termination.black_checkmate_white')
+          : I18nText('game_termination.white_checkmate_black');
+    } else if (_gameLogic.stalemate) {
+      result = I18nText('game_termination.stalemate');
+    } else if (_gameLogic.repetition) {
+      result = I18nText('game_termination.repetitions');
+    } else if (_gameLogic.insufficientMaterial) {
+      result = I18nText('game_termination.insufficient_material');
+    } else if (_gameLogic.inDraw) {
+      result = I18nText('game_termination.fifty_moves');
+    }
+    return result;
+  }
+
   void _tryMakingMove({required ShortMove move}) {
     final moveAlgebraic =
         "${move.from}${move.to}${move.promotion.map((t) => t.name).getOrElse(() => '')}";
@@ -130,7 +159,33 @@ class _MyHomePageState extends State<MyHomePage> {
         _addMoveToHistory();
         _gameStart = false;
       });
-      _updateHistoryChildrenWidgets();
+      if (_gameLogic.gameOver) {
+        final gameResultString = _getGameResultString();
+        final nextHistoryNode = HistoryNode(caption: gameResultString);
+
+        setState(() {
+          _currentGameHistoryNode?.next = nextHistoryNode;
+          _currentGameHistoryNode = nextHistoryNode;
+        });
+        _updateHistoryChildrenWidgets();
+
+        setState(() {
+          _whitePlayerType = PlayerType.computer;
+          _blackPlayerType = PlayerType.computer;
+          _gameInProgress = false;
+        });
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                _getGameEndedType(),
+              ],
+            ),
+          ),
+        );
+      }
     }
   }
 
@@ -139,6 +194,7 @@ class _MyHomePageState extends State<MyHomePage> {
       _whitePlayerType = PlayerType.human;
       _blackPlayerType = PlayerType.human;
       _gameStart = true;
+      _gameInProgress = true;
       _gameLogic =
           bishop.Game(variant: bishop.Variant.standard(), fen: _startPosition);
       final startPosition = _startPosition;
