@@ -731,6 +731,7 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 
   Future<void> _accessSettings() async {
+    if (_gameInProgress) return;
     var success = await Navigator.of(context).pushNamed('/settings');
     if (success == true) {
       ScaffoldMessenger.of(context).showSnackBar(
