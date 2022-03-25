@@ -88,6 +88,7 @@ class _MyHomePageState extends State<MyHomePage> {
   bool _uciOk = false;
   bool _readyOk = false;
   bool _engineThinking = false;
+  bool _scoreVisible = false;
   double _score = 0.0;
   final ScrollController _historyScrollController =
       ScrollController(initialScrollOffset: 0.0, keepScrollOffset: true);
@@ -805,16 +806,33 @@ class _MyHomePageState extends State<MyHomePage> {
               ),
               Column(
                 children: [
-                  Text(
-                    _score.toString(),
-                    style: TextStyle(
-                      fontSize: 40.0,
-                      color: _score < 0
-                          ? Colors.red
-                          : _score > 0
-                              ? Colors.green
-                              : Colors.black,
-                    ),
+                  Row(
+                    children: [
+                      I18nText('game.show_evaluation'),
+                      Checkbox(
+                        value: _scoreVisible,
+                        onChanged: (newValue) {
+                          if (_gameInProgress) {
+                            setState(() {
+                              _scoreVisible = newValue ?? false;
+                            });
+                          }
+                        },
+                      ),
+                      _scoreVisible
+                          ? Text(
+                              _score.toString(),
+                              style: TextStyle(
+                                fontSize: 40.0,
+                                color: _score < 0
+                                    ? Colors.red
+                                    : _score > 0
+                                        ? Colors.green
+                                        : Colors.black,
+                              ),
+                            )
+                          : const SizedBox(),
+                    ],
                   ),
                   SizedBox(
                     width: 550,
