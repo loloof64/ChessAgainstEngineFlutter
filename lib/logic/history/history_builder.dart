@@ -334,3 +334,24 @@ Move _getMoveFromSan(
 
   return Move(from: moveFrom, to: moveTo);
 }
+
+int getHistoryNodeIndex({
+  required HistoryNode node,
+  required HistoryNode rootNode,
+}) {
+  int result = 0;
+  HistoryNode? currentNode = rootNode;
+
+  do {
+    if (currentNode == null) break;
+    if (currentNode == node) break;
+    if (currentNode.variations.isNotEmpty) {
+      //TODO process variations
+      // increment result with variation length recursively or break with found index
+    }
+    currentNode = currentNode.next;
+    result++;
+  } while (currentNode != null);
+
+  return result;
+}

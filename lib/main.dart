@@ -89,6 +89,8 @@ class _MyHomePageState extends State<MyHomePage> {
   bool _uciOk = false;
   bool _readyOk = false;
   bool _engineThinking = false;
+  final ScrollController _historyScrollController =
+      ScrollController(initialScrollOffset: 0.0, keepScrollOffset: true);
   BoardArrow? _lastMoveArrow;
   late SharedPreferences _prefs;
   Process? _engineProcess;
@@ -373,6 +375,11 @@ class _MyHomePageState extends State<MyHomePage> {
     _engineProcess!.stdin.writeln('uci');
 
     setState(() {
+      _historyScrollController.animateTo(
+        0.0,
+        duration: const Duration(milliseconds: 50),
+        curve: Curves.easeIn,
+      );
       _whitePlayerType = PlayerType.computer;
       _blackPlayerType = PlayerType.computer;
       _gameStart = true;
@@ -459,6 +466,19 @@ class _MyHomePageState extends State<MyHomePage> {
           tree: _gameHistoryTree!,
           onHistoryMoveRequested: onHistoryMoveRequested,
         );
+      }
+      if (_selectedHistoryNode != null) {
+        var selectedNodeIndex = getHistoryNodeIndex(
+            node: _selectedHistoryNode!, rootNode: _gameHistoryTree!);
+        var selectedLine = selectedNodeIndex ~/ 6;
+        _historyScrollController.animateTo(
+          selectedLine * 40.0,
+          duration: const Duration(milliseconds: 50),
+          curve: Curves.easeIn,
+        );
+      } else {
+        _historyScrollController.animateTo(0.0,
+            duration: const Duration(milliseconds: 10), curve: Curves.easeIn);
       }
     });
   }
@@ -767,6 +787,7 @@ class _MyHomePageState extends State<MyHomePage> {
               ),
               ChessHistory(
                 historyTree: _gameHistoryTree,
+                scrollController: _historyScrollController,
                 children: _historyWidgetsTree,
                 requestGotoFirst: _requestGotoFirst,
                 requestGotoPrevious: _requestGotoPrevious,
