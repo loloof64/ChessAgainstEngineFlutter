@@ -107,6 +107,63 @@ class _MyHomePageState extends State<MyHomePage> {
     super.dispose();
   }
 
+  void _processEngineBestMoveMessage(String message) {
+    if (!_gameInProgress) return;
+    final bestMoveIndex = message.indexOf("bestmove");
+    final bestMoveMessage = message.substring(bestMoveIndex);
+    final parts = bestMoveMessage.split(" ");
+    final moveAlgebraic = parts[1];
+    final matchingMove = _gameLogic.getMove(moveAlgebraic);
+
+    if (matchingMove == null) return;
+    final from = moveAlgebraic.substring(0, 2);
+    final to = moveAlgebraic.substring(2, 4);
+
+    setState(() {
+      _gameLogic.makeMove(matchingMove);
+      _lastMoveArrow = BoardArrow(from: from, to: to, color: Colors.blueAccent);
+      _addMoveToHistory();
+      _gameStart = false;
+    });
+
+    if (_gameLogic.gameOver) {
+      final gameResultString = _getGameResultString();
+      final nextHistoryNode = HistoryNode(caption: gameResultString);
+
+      setState(() {
+        _selectedHistoryNode = _currentGameHistoryNode;
+        _lastMoveArrow = BoardArrow(
+          from: _currentGameHistoryNode!.relatedMove!.from.toString(),
+          to: _currentGameHistoryNode!.relatedMove!.to.toString(),
+          color: Colors.blueAccent,
+        );
+        _currentGameHistoryNode?.next = nextHistoryNode;
+        _currentGameHistoryNode = nextHistoryNode;
+      });
+      _updateHistoryChildrenWidgets();
+
+      setState(() {
+        _whitePlayerType = PlayerType.computer;
+        _blackPlayerType = PlayerType.computer;
+        _gameInProgress = false;
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              _getGameEndedType(),
+            ],
+          ),
+        ),
+      );
+    }
+
+    _updateHistoryChildrenWidgets();
+    _makeComputerMove();
+  }
+
   void _processEngineStdOut(String message) {
     print(message);
     if (message.contains("uciok")) {
@@ -124,61 +181,7 @@ class _MyHomePageState extends State<MyHomePage> {
       return;
     }
     if (message.contains("bestmove")) {
-      if (!_gameInProgress) return;
-      final bestMoveIndex = message.indexOf("bestmove");
-      final bestMoveMessage = message.substring(bestMoveIndex);
-      final parts = bestMoveMessage.split(" ");
-      final moveAlgebraic = parts[1];
-      final matchingMove = _gameLogic.getMove(moveAlgebraic);
-
-      if (matchingMove == null) return;
-      final from = moveAlgebraic.substring(0, 2);
-      final to = moveAlgebraic.substring(2, 4);
-
-      setState(() {
-        _gameLogic.makeMove(matchingMove);
-        _lastMoveArrow =
-            BoardArrow(from: from, to: to, color: Colors.blueAccent);
-        _addMoveToHistory();
-        _gameStart = false;
-      });
-
-      if (_gameLogic.gameOver) {
-        final gameResultString = _getGameResultString();
-        final nextHistoryNode = HistoryNode(caption: gameResultString);
-
-        setState(() {
-          _selectedHistoryNode = _currentGameHistoryNode;
-          _lastMoveArrow = BoardArrow(
-            from: _currentGameHistoryNode!.relatedMove!.from.toString(),
-            to: _currentGameHistoryNode!.relatedMove!.to.toString(),
-            color: Colors.blueAccent,
-          );
-          _currentGameHistoryNode?.next = nextHistoryNode;
-          _currentGameHistoryNode = nextHistoryNode;
-        });
-        _updateHistoryChildrenWidgets();
-
-        setState(() {
-          _whitePlayerType = PlayerType.computer;
-          _blackPlayerType = PlayerType.computer;
-          _gameInProgress = false;
-        });
-
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                _getGameEndedType(),
-              ],
-            ),
-          ),
-        );
-      }
-
-      _updateHistoryChildrenWidgets();
-      _makeComputerMove();
+      _processEngineBestMoveMessage(message);
     }
   }
 
