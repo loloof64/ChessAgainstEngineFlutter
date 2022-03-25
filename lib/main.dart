@@ -124,6 +124,7 @@ class _MyHomePageState extends State<MyHomePage> {
       _lastMoveArrow = BoardArrow(from: from, to: to, color: Colors.blueAccent);
       _addMoveToHistory();
       _gameStart = false;
+      _engineThinking = false;
     });
 
     if (_gameLogic.gameOver) {
@@ -336,7 +337,7 @@ class _MyHomePageState extends State<MyHomePage> {
     if (enginePath == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          duration: const Duration(seconds: 3),
+          duration: const Duration(seconds: 1),
           content: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [I18nText('engine.not_configured')],
@@ -737,14 +738,27 @@ class _MyHomePageState extends State<MyHomePage> {
             children: <Widget>[
               SizedBox(
                 height: 600,
-                child: SimpleChessBoard(
-                    lastMoveToHighlight: _lastMoveArrow,
-                    fen: _gameLogic.fen,
-                    orientation: _orientation,
-                    whitePlayerType: _whitePlayerType,
-                    blackPlayerType: _blackPlayerType,
-                    onMove: _tryMakingMove,
-                    onPromote: _handlePromotion),
+                child: Stack(
+                  children: [
+                    SimpleChessBoard(
+                        lastMoveToHighlight: _lastMoveArrow,
+                        fen: _gameLogic.fen,
+                        orientation: _orientation,
+                        whitePlayerType: _whitePlayerType,
+                        blackPlayerType: _blackPlayerType,
+                        onMove: _tryMakingMove,
+                        onPromote: _handlePromotion),
+                    _engineThinking
+                        ? const Center(
+                            child: SizedBox(
+                              width: 600,
+                              height: 600,
+                              child: CircularProgressIndicator(),
+                            ),
+                          )
+                        : const SizedBox(),
+                  ],
+                ),
               ),
               const SizedBox(
                 width: 30,
