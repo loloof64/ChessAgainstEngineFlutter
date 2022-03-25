@@ -235,6 +235,10 @@ class _MyHomePageState extends State<MyHomePage> {
 
       final san = _gameLogic.sanMoves().last;
 
+      ///////////////////////////
+      print(san);
+      ///////////////////////////
+
       // Move has been played: we need to revert player turn for the SAN.
       final fan = san.toFan(whiteMove: !whiteMove);
       final relatedMoveFromSquareIndex =
@@ -382,7 +386,7 @@ class _MyHomePageState extends State<MyHomePage> {
         duration: const Duration(milliseconds: 50),
         curve: Curves.easeIn,
       );
-      _whitePlayerType = PlayerType.computer;
+      _whitePlayerType = PlayerType.human;
       _blackPlayerType = PlayerType.computer;
       _gameStart = true;
       _gameInProgress = true;
