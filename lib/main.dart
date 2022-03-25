@@ -548,12 +548,14 @@ class _MyHomePageState extends State<MyHomePage> {
   void _stopCurrentGame() {
     final nextHistoryNode = HistoryNode(caption: '*');
     setState(() {
-      _lastMoveArrow = BoardArrow(
-        from: _currentGameHistoryNode!.relatedMove!.from.toString(),
-        to: _currentGameHistoryNode!.relatedMove!.to.toString(),
-        color: Colors.blueAccent,
-      );
-      _selectedHistoryNode = _currentGameHistoryNode;
+      if (_currentGameHistoryNode?.relatedMove != null) {
+        _lastMoveArrow = BoardArrow(
+          from: _currentGameHistoryNode!.relatedMove!.from.toString(),
+          to: _currentGameHistoryNode!.relatedMove!.to.toString(),
+          color: Colors.blueAccent,
+        );
+        _selectedHistoryNode = _currentGameHistoryNode;
+      }
       _currentGameHistoryNode?.next = nextHistoryNode;
       _currentGameHistoryNode = nextHistoryNode;
       _gameInProgress = false;
