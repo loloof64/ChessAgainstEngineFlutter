@@ -187,6 +187,9 @@ class _MyHomePageState extends State<MyHomePage> {
       _makeComputerMove();
       return;
     }
+    if (message.contains("option")) {
+      print(message);
+    }
     if (message.contains("score cp")) {
       final scores = RegExp(r"score cp ([0-9-]+)")
           .allMatches(message)
@@ -369,6 +372,10 @@ class _MyHomePageState extends State<MyHomePage> {
       );
       return;
     }
+
+    _engineStdOutSubscription?.cancel();
+    _engineProcess?.kill();
+
     try {
       _engineProcess = await Process.start(enginePath, []);
     } on Exception catch (_) {
