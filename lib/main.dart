@@ -206,7 +206,8 @@ class _MyHomePageState extends State<MyHomePage> {
       _engineThinking = true;
     });
     _engineProcess!.stdin.writeln("position fen ${_gameLogic.fen}");
-    _engineProcess!.stdin.writeln("go movetime 2500");
+    //TODO flexible : from 500 ms to 3000 ms, with default to 1500 ms
+    _engineProcess!.stdin.writeln("go movetime 500");
   }
 
   /*
@@ -337,7 +338,7 @@ class _MyHomePageState extends State<MyHomePage> {
     if (enginePath == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          duration: const Duration(seconds: 1),
+          duration: const Duration(seconds: 3),
           content: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [I18nText('engine.not_configured')],
@@ -509,6 +510,7 @@ class _MyHomePageState extends State<MyHomePage> {
       _currentGameHistoryNode?.next = nextHistoryNode;
       _currentGameHistoryNode = nextHistoryNode;
       _gameInProgress = false;
+      _engineThinking = false;
       _whitePlayerType = PlayerType.computer;
       _blackPlayerType = PlayerType.computer;
     });

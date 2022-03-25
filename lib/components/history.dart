@@ -22,6 +22,7 @@ import '../logic/history/history_builder.dart';
 class ChessHistory extends StatelessWidget {
   final HistoryNode? historyTree;
   final List<Widget> children;
+  final double initialScrollOffset;
 
   final void Function() requestGotoFirst;
   final void Function() requestGotoPrevious;
@@ -32,6 +33,7 @@ class ChessHistory extends StatelessWidget {
     Key? key,
     required this.historyTree,
     required this.children,
+    this.initialScrollOffset = 0.0,
     required this.requestGotoFirst,
     required this.requestGotoPrevious,
     required this.requestGotoNext,
@@ -82,6 +84,9 @@ class ChessHistory extends StatelessWidget {
             child: Container(
               color: Colors.amber[300],
               child: SingleChildScrollView(
+                controller: ScrollController(
+                  initialScrollOffset: initialScrollOffset,
+                ),
                 child: Wrap(
                   spacing: 10,
                   runSpacing: 6,
