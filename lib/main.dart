@@ -806,37 +806,45 @@ class _MyHomePageState extends State<MyHomePage> {
               ),
               Column(
                 children: [
-                  Row(
-                    children: [
-                      I18nText('game.show_evaluation'),
-                      Checkbox(
-                        value: _scoreVisible,
-                        onChanged: (newValue) {
-                          if (_gameInProgress) {
-                            setState(() {
-                              _scoreVisible = newValue ?? false;
-                            });
-                          }
-                        },
-                      ),
-                      _scoreVisible
-                          ? Text(
-                              _score.toString(),
-                              style: TextStyle(
-                                fontSize: 40.0,
-                                color: _score < 0
-                                    ? Colors.red
-                                    : _score > 0
-                                        ? Colors.green
-                                        : Colors.black,
+                  _gameInProgress
+                      ? Row(
+                          children: [
+                            I18nText(
+                              'game.show_evaluation',
+                              child: const Text(
+                                '',
+                                style: TextStyle(fontSize: 40.0),
                               ),
-                            )
-                          : const SizedBox(),
-                    ],
-                  ),
+                            ),
+                            Checkbox(
+                              value: _scoreVisible,
+                              onChanged: (newValue) {
+                                if (_gameInProgress) {
+                                  setState(() {
+                                    _scoreVisible = newValue ?? false;
+                                  });
+                                }
+                              },
+                            ),
+                            _scoreVisible
+                                ? Text(
+                                    _score.toString(),
+                                    style: TextStyle(
+                                      fontSize: 40.0,
+                                      color: _score < 0
+                                          ? Colors.red
+                                          : _score > 0
+                                              ? Colors.green
+                                              : Colors.black,
+                                    ),
+                                  )
+                                : const SizedBox(),
+                          ],
+                        )
+                      : const SizedBox(),
                   SizedBox(
                     width: 550,
-                    height: 575,
+                    height: _gameInProgress ? 575 : 625,
                     child: ChessHistory(
                       historyTree: _gameHistoryTree,
                       scrollController: _historyScrollController,
