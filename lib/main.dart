@@ -88,6 +88,7 @@ class _MyHomePageState extends State<MyHomePage> {
   bool _uciOk = false;
   bool _readyOk = false;
   bool _engineThinking = false;
+  double _score = 0.0;
   final ScrollController _historyScrollController =
       ScrollController(initialScrollOffset: 0.0, keepScrollOffset: true);
   BoardArrow? _lastMoveArrow;
@@ -171,7 +172,6 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 
   void _processEngineStdOut(String message) {
-    print(message);
     if (message.contains("uciok")) {
       setState(() {
         _uciOk = true;
@@ -185,6 +185,17 @@ class _MyHomePageState extends State<MyHomePage> {
       });
       _makeComputerMove();
       return;
+    }
+    if (message.contains("score cp")) {
+      final scores = RegExp(r"score cp ([0-9-]+)")
+          .allMatches(message)
+          .map((e) => e.group(1))
+          .map((e) => int.parse(e!) / 100.0);
+      for (var score in scores) {
+        setState(() {
+          _score = score;
+        });
+      }
     }
     if (message.contains("bestmove")) {
       _processEngineBestMoveMessage(message);
@@ -383,6 +394,7 @@ class _MyHomePageState extends State<MyHomePage> {
     _engineProcess!.stdin.writeln('uci');
 
     setState(() {
+      _score = 0.0;
       _historyScrollController.animateTo(
         0.0,
         duration: const Duration(milliseconds: 50),
@@ -791,14 +803,33 @@ class _MyHomePageState extends State<MyHomePage> {
               const SizedBox(
                 width: 30,
               ),
-              ChessHistory(
-                historyTree: _gameHistoryTree,
-                scrollController: _historyScrollController,
-                children: _historyWidgetsTree,
-                requestGotoFirst: _requestGotoFirst,
-                requestGotoPrevious: _requestGotoPrevious,
-                requestGotoNext: _requestGotoNext,
-                requestGotoLast: _requestGotoLast,
+              Column(
+                children: [
+                  Text(
+                    _score.toString(),
+                    style: TextStyle(
+                      fontSize: 40.0,
+                      color: _score < 0
+                          ? Colors.red
+                          : _score > 0
+                              ? Colors.green
+                              : Colors.black,
+                    ),
+                  ),
+                  SizedBox(
+                    width: 550,
+                    height: 575,
+                    child: ChessHistory(
+                      historyTree: _gameHistoryTree,
+                      scrollController: _historyScrollController,
+                      children: _historyWidgetsTree,
+                      requestGotoFirst: _requestGotoFirst,
+                      requestGotoPrevious: _requestGotoPrevious,
+                      requestGotoNext: _requestGotoNext,
+                      requestGotoLast: _requestGotoLast,
+                    ),
+                  ),
+                ],
               ),
             ],
           ),

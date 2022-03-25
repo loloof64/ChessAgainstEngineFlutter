@@ -42,59 +42,57 @@ class ChessHistory extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Expanded(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: <Widget>[
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              ElevatedButton(
-                onPressed: requestGotoFirst,
-                child: const Icon(Icons.first_page),
-                style: ElevatedButton.styleFrom(
-                  shape: const CircleBorder(),
-                ),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: <Widget>[
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            ElevatedButton(
+              onPressed: requestGotoFirst,
+              child: const Icon(Icons.first_page),
+              style: ElevatedButton.styleFrom(
+                shape: const CircleBorder(),
               ),
-              ElevatedButton(
-                onPressed: requestGotoPrevious,
-                child: const Icon(Icons.arrow_back),
-                style: ElevatedButton.styleFrom(
-                  shape: const CircleBorder(),
-                ),
+            ),
+            ElevatedButton(
+              onPressed: requestGotoPrevious,
+              child: const Icon(Icons.arrow_back),
+              style: ElevatedButton.styleFrom(
+                shape: const CircleBorder(),
               ),
-              ElevatedButton(
-                onPressed: requestGotoNext,
-                child: const Icon(Icons.arrow_forward),
-                style: ElevatedButton.styleFrom(
-                  shape: const CircleBorder(),
-                ),
+            ),
+            ElevatedButton(
+              onPressed: requestGotoNext,
+              child: const Icon(Icons.arrow_forward),
+              style: ElevatedButton.styleFrom(
+                shape: const CircleBorder(),
               ),
-              ElevatedButton(
-                onPressed: requestGotoLast,
-                child: const Icon(Icons.last_page),
-                style: ElevatedButton.styleFrom(
-                  shape: const CircleBorder(),
-                ),
+            ),
+            ElevatedButton(
+              onPressed: requestGotoLast,
+              child: const Icon(Icons.last_page),
+              style: ElevatedButton.styleFrom(
+                shape: const CircleBorder(),
               ),
-            ],
-          ),
-          Expanded(
-            child: Container(
-              color: Colors.amber[300],
-              child: SingleChildScrollView(
-                controller: scrollController,
-                child: Wrap(
-                  spacing: 10,
-                  runSpacing: 6,
-                  children: children,
-                ),
+            ),
+          ],
+        ),
+        Expanded(
+          child: Container(
+            color: Colors.amber[300],
+            child: SingleChildScrollView(
+              controller: scrollController,
+              child: Wrap(
+                spacing: 10,
+                runSpacing: 6,
+                children: children,
               ),
             ),
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 }
