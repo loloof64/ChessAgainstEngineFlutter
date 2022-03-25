@@ -331,6 +331,8 @@ class _MyHomePageState extends State<MyHomePage> {
             ),
           ),
         );
+      } else {
+        _makeComputerMove();
       }
     }
   }
@@ -467,18 +469,26 @@ class _MyHomePageState extends State<MyHomePage> {
           onHistoryMoveRequested: onHistoryMoveRequested,
         );
       }
-      if (_selectedHistoryNode != null) {
-        var selectedNodeIndex = getHistoryNodeIndex(
-            node: _selectedHistoryNode!, rootNode: _gameHistoryTree!);
-        var selectedLine = selectedNodeIndex ~/ 6;
+      if (_gameInProgress) {
         _historyScrollController.animateTo(
-          selectedLine * 40.0,
+          _historyScrollController.position.maxScrollExtent,
           duration: const Duration(milliseconds: 50),
           curve: Curves.easeIn,
         );
       } else {
-        _historyScrollController.animateTo(0.0,
-            duration: const Duration(milliseconds: 10), curve: Curves.easeIn);
+        if (_selectedHistoryNode != null) {
+          var selectedNodeIndex = getHistoryNodeIndex(
+              node: _selectedHistoryNode!, rootNode: _gameHistoryTree!);
+          var selectedLine = selectedNodeIndex ~/ 6;
+          _historyScrollController.animateTo(
+            selectedLine * 40.0,
+            duration: const Duration(milliseconds: 50),
+            curve: Curves.easeIn,
+          );
+        } else {
+          _historyScrollController.animateTo(0.0,
+              duration: const Duration(milliseconds: 10), curve: Curves.easeIn);
+        }
       }
     });
   }
