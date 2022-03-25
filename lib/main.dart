@@ -782,6 +782,8 @@ class _MyHomePageState extends State<MyHomePage> {
 
   @override
   Widget build(BuildContext context) {
+    var historySize = _gameInProgress ? 575 : 625;
+    if (_skillLevelEditable) historySize -= 45;
     return Scaffold(
       appBar: AppBar(
         title: I18nText('app.title'),
@@ -903,7 +905,7 @@ class _MyHomePageState extends State<MyHomePage> {
                   ),
                   SizedBox(
                     width: 550,
-                    height: _gameInProgress ? 575 : 625,
+                    height: historySize.toDouble(),
                     child: ChessHistory(
                       historyTree: _gameHistoryTree,
                       scrollController: _historyScrollController,
