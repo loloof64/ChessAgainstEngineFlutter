@@ -87,6 +87,11 @@ class _MyHomePageState extends State<MyHomePage> {
   bool _gameInProgress = false;
   bool _uciOk = false;
   bool _readyOk = false;
+  bool _skillLevelEditable = false;
+  int _skillLevel = -1;
+  int _skillLevelDefault = -1;
+  int _skillLevelMin = -1;
+  int _skillLevelMax = -1;
   bool _engineThinking = false;
   bool _scoreVisible = false;
   double _score = 0.0;
@@ -173,6 +178,28 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 
   void _processEngineStdOut(String message) {
+    if (message.contains("option")) {
+      final skillLevelPart = RegExp(
+              r'option name Skill Level type spin default (\d+) min (\d+) max (\d+)')
+          .firstMatch(message);
+      if (skillLevelPart != null) {
+        final defaultLevel = int.parse(skillLevelPart.group(1)!);
+        final minLevel = int.parse(skillLevelPart.group(2)!);
+        final maxLevel = int.parse(skillLevelPart.group(3)!);
+
+        setState(() {
+          _skillLevelEditable = true;
+          _skillLevelDefault = defaultLevel;
+          _skillLevelMin = minLevel;
+          _skillLevelMax = maxLevel;
+          _skillLevel = _skillLevelDefault;
+        });
+      } else {
+        setState(() {
+          _skillLevelEditable = false;
+        });
+      }
+    }
     if (message.contains("uciok")) {
       setState(() {
         _uciOk = true;
@@ -186,9 +213,6 @@ class _MyHomePageState extends State<MyHomePage> {
       });
       _makeComputerMove();
       return;
-    }
-    if (message.contains("option")) {
-      print(message);
     }
     if (message.contains("score cp")) {
       final scores = RegExp(r"score cp ([0-9-]+)")
@@ -816,42 +840,67 @@ class _MyHomePageState extends State<MyHomePage> {
               ),
               Column(
                 children: [
-                  _gameInProgress
-                      ? Row(
-                          children: [
-                            I18nText(
-                              'game.show_evaluation',
-                              child: const Text(
-                                '',
-                                style: TextStyle(fontSize: 40.0),
-                              ),
-                            ),
-                            Checkbox(
-                              value: _scoreVisible,
-                              onChanged: (newValue) {
-                                if (_gameInProgress) {
-                                  setState(() {
-                                    _scoreVisible = newValue ?? false;
-                                  });
-                                }
-                              },
-                            ),
-                            _scoreVisible
-                                ? Text(
-                                    _score.toString(),
-                                    style: TextStyle(
-                                      fontSize: 40.0,
-                                      color: _score < 0
-                                          ? Colors.red
-                                          : _score > 0
-                                              ? Colors.green
-                                              : Colors.black,
-                                    ),
-                                  )
-                                : const SizedBox(),
-                          ],
-                        )
-                      : const SizedBox(),
+                  Column(
+                    children: [
+                      _gameInProgress
+                          ? Row(
+                              children: [
+                                I18nText(
+                                  'game.show_evaluation',
+                                  child: const Text(
+                                    '',
+                                    style: TextStyle(fontSize: 40.0),
+                                  ),
+                                ),
+                                Checkbox(
+                                  value: _scoreVisible,
+                                  onChanged: (newValue) {
+                                    if (_gameInProgress) {
+                                      setState(() {
+                                        _scoreVisible = newValue ?? false;
+                                      });
+                                    }
+                                  },
+                                ),
+                                _scoreVisible
+                                    ? Text(
+                                        _score.toString(),
+                                        style: TextStyle(
+                                          fontSize: 40.0,
+                                          color: _score < 0
+                                              ? Colors.red
+                                              : _score > 0
+                                                  ? Colors.green
+                                                  : Colors.black,
+                                        ),
+                                      )
+                                    : const SizedBox(),
+                              ],
+                            )
+                          : const SizedBox(),
+                      _skillLevelEditable
+                          ? Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                I18nText('game.engine_level'),
+                                Slider(
+                                  value: _skillLevel.toDouble(),
+                                  min: _skillLevelMin.toDouble(),
+                                  max: _skillLevelMax.toDouble(),
+                                  onChanged: (newValue) {
+                                    setState(() {
+                                      _skillLevel = newValue.toInt();
+                                      _engineProcess!.stdin.writeln(
+                                          'setoption name Skill Level value $_skillLevel');
+                                    });
+                                  },
+                                ),
+                                Text(_skillLevel.toString()),
+                              ],
+                            )
+                          : const SizedBox(),
+                    ],
+                  ),
                   SizedBox(
                     width: 550,
                     height: _gameInProgress ? 575 : 625,
