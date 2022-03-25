@@ -223,8 +223,8 @@ class _MyHomePageState extends State<MyHomePage> {
       _engineThinking = true;
     });
     _engineProcess!.stdin.writeln("position fen ${_gameLogic.fen}");
-    //TODO flexible : from 500 ms to 3000 ms, with default to 1500 ms
-    _engineProcess!.stdin.writeln("go movetime 500");
+    _engineProcess!.stdin.writeln(
+        "go movetime ${_prefs.getDouble('engineThinkingTime') ?? 1000.0}");
   }
 
   /*

@@ -26,4 +26,6 @@ settings:
     select: "Seleccionar"
     engine_path_label: "Ruta del motor de ajedrez"
     no_engine: "Sin motor"
+    engine_thinking_time_label: "Tiempo de pensamiento del motor"
+    engine_thinking_time_value: "{time} s"
     saved: "Configuración guardada"

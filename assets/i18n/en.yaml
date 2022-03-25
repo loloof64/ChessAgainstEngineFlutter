@@ -26,4 +26,6 @@ settings:
     select: "Select"
     engine_path_label: "Chess engine path"
     no_engine: "No engine"
+    engine_thinking_time_label: "Engine thinking time"
+    engine_thinking_time_value: "{time} s"
     saved: "Settings saved"

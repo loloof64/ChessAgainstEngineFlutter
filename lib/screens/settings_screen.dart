@@ -13,6 +13,7 @@ class SettingsPage extends StatefulWidget {
 
 class _SettingsPageState extends State<SettingsPage> {
   String? _editedEnginePath;
+  double _engineThinkingTimeMs = 1000.0;
   late SharedPreferences _prefs;
 
   @override
@@ -24,16 +25,18 @@ class _SettingsPageState extends State<SettingsPage> {
   Future<void> _initPreferences() async {
     _prefs = await SharedPreferences.getInstance();
     setState(() {
-      _editedEnginePath = _loadEnginePath();
+      _editedEnginePath = _prefs.getString('enginePath');
+      _engineThinkingTimeMs = _prefs.getDouble('engineThinkingTime') ?? 1000.0;
     });
   }
 
-  String? _loadEnginePath() {
-    return _prefs.getString('enginePath');
-  }
-
-  Future<bool> _saveEnginePath(String path) async {
-    return await _prefs.setString('enginePath', path);
+  Future<void> _savePreferences() async {
+    if (_editedEnginePath != null) {
+      await _prefs.setString('enginePath', _editedEnginePath!);
+    } else {
+      await _prefs.remove('enginePath');
+    }
+    await _prefs.setDouble('engineThinkingTime', _engineThinkingTimeMs);
   }
 
   @override
@@ -55,7 +58,7 @@ class _SettingsPageState extends State<SettingsPage> {
                 padding: const EdgeInsets.all(8.0),
                 child: ElevatedButton(
                   onPressed: () async {
-                    final initialPath = _editedEnginePath ?? '';
+                    final initialPath = _editedEnginePath;
                     FilePickerResult? result = await FilePicker.platform
                         .pickFiles(initialDirectory: initialPath);
                     if (result != null) {
@@ -78,18 +81,46 @@ class _SettingsPageState extends State<SettingsPage> {
             ),
           ),
           Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Padding(
+                padding: const EdgeInsets.all(8.0),
+                child: I18nText('settings.engine_thinking_time_label'),
+              ),
+              Padding(
+                padding: const EdgeInsets.all(8.0),
+                child: Slider(
+                  value: _engineThinkingTimeMs,
+                  onChanged: (newValue) {
+                    setState(() {
+                      _engineThinkingTimeMs = newValue;
+                    });
+                  },
+                  divisions: null,
+                  min: 500,
+                  max: 5000,
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.all(8.0),
+                child: I18nText(
+                  'settings.engine_thinking_time_value',
+                  translationParams: {
+                    'time': (_engineThinkingTimeMs / 1000.0).toStringAsFixed(2),
+                  },
+                ),
+              ),
+            ],
+          ),
+          Row(
             mainAxisAlignment: MainAxisAlignment.end,
             children: [
               Padding(
                 padding: const EdgeInsets.all(8.0),
                 child: DialogActionButton(
                   onPressed: () async {
-                    if (_editedEnginePath != null) {
-                      _saveEnginePath(_editedEnginePath!);
-                      Navigator.of(context).pop(true);
-                    } else {
-                      Navigator.of(context).pop(false);
-                    }
+                    _savePreferences();
+                    Navigator.of(context).pop(true);
                   },
                   textContent: I18nText('buttons.ok'),
                   backgroundColor: Colors.greenAccent,

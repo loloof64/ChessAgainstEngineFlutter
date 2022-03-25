@@ -345,10 +345,6 @@ int getHistoryNodeIndex({
   do {
     if (currentNode == null) break;
     if (currentNode == node) break;
-    if (currentNode.variations.isNotEmpty) {
-      //TODO process variations
-      // increment result with variation length recursively or break with found index
-    }
     currentNode = currentNode.next;
     result++;
   } while (currentNode != null);

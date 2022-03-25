@@ -26,4 +26,6 @@ settings:
     select: "Choisir"
     engine_path_label: "Chemin du moteur d'échecs"
     no_engine: "Aucun moteur"
+    engine_thinking_time_label: "Temps réflexion ordinateur"
+    engine_thinking_time_value: "{time} s"
     saved: "Paramètres sauvegardés"
