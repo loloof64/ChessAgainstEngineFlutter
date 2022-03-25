@@ -112,6 +112,14 @@ class Cell {
   }
 }
 
+extension CellIndexConverter on int {
+  int convertSquareIndexFromChessLib() {
+    final file = this % 8;
+    final rank = this ~/ 16;
+    return file + 8 * (7 - rank);
+  }
+}
+
 class Move {
   final Cell from;
   final Cell to;
@@ -244,14 +252,6 @@ HistoryNode _recursivelyBuildHistoryTreeFromPgnTree(
     }
   }
   return rootHistoryNode;
-}
-
-extension CellIndexConverter on int {
-  int convertSquareIndexFromBishop() {
-    final file = this % 8;
-    final rank = 7 - this ~/ 16;
-    return file + 8 * rank;
-  }
 }
 
 List<Widget> recursivelyBuildWidgetsFromHistoryTree({

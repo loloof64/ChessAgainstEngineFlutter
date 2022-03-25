@@ -8,13 +8,6 @@ packages:
       url: "https://pub.dartlang.org"
     source: hosted
     version: "2.8.2"
-  bishop:
-    dependency: "direct main"
-    description:
-      name: bishop
-      url: "https://pub.dartlang.org"
-    source: hosted
-    version: "0.3.3"
   boolean_selector:
     dependency: transitive
     description:
@@ -37,7 +30,7 @@ packages:
     source: hosted
     version: "1.3.1"
   chess:
-    dependency: transitive
+    dependency: "direct main"
     description:
       name: chess
       url: "https://pub.dartlang.org"

@@ -6,8 +6,8 @@ import 'package:flutter/material.dart';
 import 'package:simple_chess_board/models/board_arrow.dart';
 import 'package:simple_chess_board/simple_chess_board.dart';
 import 'package:chess_vectors_flutter/chess_vectors_flutter.dart';
-import 'package:bishop/bishop.dart' as bishop;
 import 'package:flutter_i18n/loaders/decoders/yaml_decode_strategy.dart';
+import 'package:chess/chess.dart' as chess;
 import 'package:flutter_i18n/flutter_i18n.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:logger/logger.dart';
@@ -74,8 +74,7 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
-  bishop.Game _gameLogic =
-      bishop.Game(variant: bishop.Variant.standard(), fen: emptyPosition);
+  chess.Chess _gameLogic = chess.Chess();
   BoardColor _orientation = BoardColor.white;
   PlayerType _whitePlayerType = PlayerType.computer;
   PlayerType _blackPlayerType = PlayerType.computer;
@@ -98,6 +97,7 @@ class _MyHomePageState extends State<MyHomePage> {
 
   @override
   void initState() {
+    _gameLogic.load(emptyPosition);
     _initPreferences();
     super.initState();
   }
@@ -115,21 +115,24 @@ class _MyHomePageState extends State<MyHomePage> {
     final bestMoveMessage = message.substring(bestMoveIndex);
     final parts = bestMoveMessage.split(" ");
     final moveAlgebraic = parts[1];
-    final matchingMove = _gameLogic.getMove(moveAlgebraic);
-
-    if (matchingMove == null) return;
     final from = moveAlgebraic.substring(0, 2);
     final to = moveAlgebraic.substring(2, 4);
+    final promotion =
+        moveAlgebraic.length > 4 ? moveAlgebraic.substring(4, 5) : null;
+
+    final matchingMove =
+        _gameLogic.move({'from': from, 'to': to, 'promotion': promotion});
+
+    if (!matchingMove) return;
 
     setState(() {
-      _gameLogic.makeMove(matchingMove);
       _lastMoveArrow = BoardArrow(from: from, to: to, color: Colors.blueAccent);
       _addMoveToHistory();
       _gameStart = false;
       _engineThinking = false;
     });
 
-    if (_gameLogic.gameOver) {
+    if (_gameLogic.game_over) {
       final gameResultString = _getGameResultString();
       final nextHistoryNode = HistoryNode(caption: gameResultString);
 
@@ -198,7 +201,7 @@ class _MyHomePageState extends State<MyHomePage> {
 
   void _makeComputerMove() {
     if (!_gameInProgress) return;
-    final whiteTurn = _gameLogic.turn == bishop.WHITE;
+    final whiteTurn = _gameLogic.turn == chess.Color.WHITE;
     final computerTurn =
         (whiteTurn && _whitePlayerType == PlayerType.computer) ||
             (!whiteTurn && _blackPlayerType == PlayerType.computer);
@@ -219,7 +222,7 @@ class _MyHomePageState extends State<MyHomePage> {
   */
   void _addMoveToHistory() {
     if (_currentGameHistoryNode != null) {
-      final whiteMove = _gameLogic.turn == bishop.WHITE;
+      final whiteMove = _gameLogic.turn == chess.Color.WHITE;
       final lastPlayedMove = _gameLogic.history.last.move;
 
       /*
@@ -233,20 +236,18 @@ class _MyHomePageState extends State<MyHomePage> {
         _currentGameHistoryNode = nextHistoryNode;
       }
 
-      final san = _gameLogic.sanMoves().last;
-
-      ///////////////////////////
-      print(san);
-      ///////////////////////////
+      // In order to get move SAN, it must not be done on board yet !
+      // So we rollback the move, then we'll make it happen again.
+      _gameLogic.undo_move();
+      final san = _gameLogic.move_to_san(lastPlayedMove);
+      _gameLogic.make_move(lastPlayedMove);
 
       // Move has been played: we need to revert player turn for the SAN.
       final fan = san.toFan(whiteMove: !whiteMove);
-      final relatedMoveFromSquareIndex =
-          CellIndexConverter(lastPlayedMove!.from)
-              .convertSquareIndexFromBishop();
-      final relatedMoveToSquareIndex =
-          CellIndexConverter(lastPlayedMove.to).convertSquareIndexFromBishop();
-
+      final relatedMoveFromSquareIndex = CellIndexConverter(lastPlayedMove.from)
+          .convertSquareIndexFromChessLib();
+      final relatedMoveToSquareIndex = CellIndexConverter(lastPlayedMove.to)
+          .convertSquareIndexFromChessLib();
       final relatedMove = Move(
         from: Cell.fromSquareIndex(relatedMoveFromSquareIndex),
         to: Cell.fromSquareIndex(relatedMoveToSquareIndex),
@@ -266,10 +267,10 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 
   String _getGameResultString() {
-    if (_gameLogic.checkmate) {
-      return _gameLogic.turn == bishop.WHITE ? '0-1' : '1-0';
+    if (_gameLogic.in_checkmate) {
+      return _gameLogic.turn == chess.Color.WHITE ? '0-1' : '1-0';
     }
-    if (_gameLogic.inDraw) {
+    if (_gameLogic.in_draw) {
       return '1/2-1/2';
     }
     return '*';
@@ -277,33 +278,34 @@ class _MyHomePageState extends State<MyHomePage> {
 
   Widget _getGameEndedType() {
     dynamic result;
-    if (_gameLogic.checkmate) {
-      result = (_gameLogic.turn == bishop.WHITE)
+    if (_gameLogic.in_checkmate) {
+      result = (_gameLogic.turn == chess.Color.WHITE)
           ? I18nText('game_termination.black_checkmate_white')
           : I18nText('game_termination.white_checkmate_black');
-    } else if (_gameLogic.stalemate) {
+    } else if (_gameLogic.in_stalemate) {
       result = I18nText('game_termination.stalemate');
-    } else if (_gameLogic.repetition) {
+    } else if (_gameLogic.in_threefold_repetition) {
       result = I18nText('game_termination.repetitions');
-    } else if (_gameLogic.insufficientMaterial) {
+    } else if (_gameLogic.insufficient_material) {
       result = I18nText('game_termination.insufficient_material');
-    } else if (_gameLogic.inDraw) {
+    } else if (_gameLogic.in_draw) {
       result = I18nText('game_termination.fifty_moves');
     }
     return result;
   }
 
   void _tryMakingMove({required ShortMove move}) {
-    final moveAlgebraic =
-        "${move.from}${move.to}${move.promotion.map((t) => t.name).getOrElse(() => '')}";
-    final matchingMove = _gameLogic.getMove(moveAlgebraic);
-    if (matchingMove != null) {
+    final matchingMove = _gameLogic.move({
+      'from': move.from,
+      'to': move.to,
+      'promotion': move.promotion.map((t) => t.name).toNullable(),
+    });
+    if (!matchingMove) {
       setState(() {
-        _gameLogic.makeMove(matchingMove);
         _addMoveToHistory();
         _gameStart = false;
       });
-      if (_gameLogic.gameOver) {
+      if (_gameLogic.game_over) {
         final gameResultString = _getGameResultString();
         final nextHistoryNode = HistoryNode(caption: gameResultString);
 
@@ -390,10 +392,8 @@ class _MyHomePageState extends State<MyHomePage> {
       _blackPlayerType = PlayerType.computer;
       _gameStart = true;
       _gameInProgress = true;
-      _gameLogic = bishop.Game(
-        variant: bishop.Variant.standard(),
-        fen: _startPosition,
-      );
+      _gameLogic = chess.Chess();
+      _gameLogic.load(_startPosition);
       final startPosition = _startPosition;
       final parts = startPosition.split(' ');
       final whiteTurn = parts[1] == 'w';
@@ -617,9 +617,9 @@ class _MyHomePageState extends State<MyHomePage> {
         to: _selectedHistoryNode!.relatedMove!.to.toString(),
         color: Colors.blueAccent,
       );
-      _gameLogic = bishop.Game(
-        variant: bishop.Variant.standard(),
-        fen: selectedHistoryNode?.fen,
+      _gameLogic = chess.Chess();
+      _gameLogic.load(
+        selectedHistoryNode!.fen!,
       );
     });
     _updateHistoryChildrenWidgets();
@@ -630,10 +630,8 @@ class _MyHomePageState extends State<MyHomePage> {
     setState(() {
       _lastMoveArrow = null;
       _selectedHistoryNode = null;
-      _gameLogic = bishop.Game(
-        variant: bishop.Variant.standard(),
-        fen: _startPosition,
-      );
+      _gameLogic = chess.Chess();
+      _gameLogic.load(_startPosition);
     });
     _updateHistoryChildrenWidgets();
   }
@@ -657,10 +655,8 @@ class _MyHomePageState extends State<MyHomePage> {
             color: Colors.blueAccent,
           );
           _selectedHistoryNode = newSelectedNode;
-          _gameLogic = bishop.Game(
-            variant: bishop.Variant.standard(),
-            fen: newSelectedNode.fen,
-          );
+          _gameLogic = chess.Chess();
+          _gameLogic.load(newSelectedNode.fen!);
         });
         _updateHistoryChildrenWidgets();
       }
@@ -684,10 +680,8 @@ class _MyHomePageState extends State<MyHomePage> {
             color: Colors.blueAccent,
           );
           _selectedHistoryNode = nextNode;
-          _gameLogic = bishop.Game(
-            variant: bishop.Variant.standard(),
-            fen: nextNode.fen,
-          );
+          _gameLogic = chess.Chess();
+          _gameLogic.load(nextNode.fen!);
         });
         _updateHistoryChildrenWidgets();
       }
@@ -719,10 +713,8 @@ class _MyHomePageState extends State<MyHomePage> {
       _selectedHistoryNode = newSelectedNode;
     });
     _updateHistoryChildrenWidgets();
-    _gameLogic = bishop.Game(
-      variant: bishop.Variant.standard(),
-      fen: newSelectedNode?.fen,
-    );
+    _gameLogic = chess.Chess();
+    _gameLogic.load(newSelectedNode!.fen!);
   }
 
   Future<void> _accessSettings() async {
