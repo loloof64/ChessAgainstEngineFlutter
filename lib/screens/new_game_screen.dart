@@ -9,11 +9,11 @@ class NewGameScreen extends StatefulWidget {
   const NewGameScreen({Key? key}) : super(key: key);
 
   @override
-  _NewGameScreenState createState() => _NewGameScreenState();
+  NewGameScreenState createState() => NewGameScreenState();
 }
 
-class _NewGameScreenState extends State<NewGameScreen> {
-  PositionController _positionController = PositionController(
+class NewGameScreenState extends State<NewGameScreen> {
+  final PositionController _positionController = PositionController(
       'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1');
   late String _positionFen;
   BoardColor _orientation = BoardColor.white;
@@ -24,12 +24,18 @@ class _NewGameScreenState extends State<NewGameScreen> {
     super.initState();
   }
 
-  void _showEditPositionPage() {
-    Navigator.of(context).pushNamed(
+  Future<void> _showEditPositionPage() async {
+    final result = await Navigator.of(context).pushNamed(
       '/new_game_editor',
       arguments: NewGamePositionEditorScreenArguments(
           _positionController.currentPosition),
-    );
+    ) as String?;
+    if (result != null) {
+      setState(() {
+        _positionController.value = result;
+        _positionFen = _positionController.currentPosition;
+      });
+    }
   }
 
   @override
@@ -73,8 +79,8 @@ class _NewGameScreenState extends State<NewGameScreen> {
                       padding: const EdgeInsets.all(2.0),
                       child: DialogActionButton(
                         onPressed: () async {
-                          //TODO set new game
-                          Navigator.of(context).pop(true);
+                          Navigator.of(context)
+                              .pop(_positionController.currentPosition);
                         },
                         textContent: I18nText('buttons.ok'),
                         backgroundColor: Colors.greenAccent,
@@ -85,7 +91,7 @@ class _NewGameScreenState extends State<NewGameScreen> {
                       padding: const EdgeInsets.all(2.0),
                       child: DialogActionButton(
                         onPressed: () {
-                          Navigator.of(context).pop(false);
+                          Navigator.of(context).pop(null);
                         },
                         textContent: I18nText('buttons.cancel'),
                         backgroundColor: Colors.redAccent,

@@ -76,8 +76,6 @@ class MyApp extends StatelessWidget {
   }
 }
 
-const defaultPosition =
-    'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1';
 const emptyPosition = '8/8/8/8/8/8/8/8 w - - 0 1';
 
 class MyHomePage extends StatefulWidget {
@@ -96,7 +94,7 @@ class _MyHomePageState extends State<MyHomePage> {
   HistoryNode? _currentGameHistoryNode;
   HistoryNode? _selectedHistoryNode;
   List<Widget> _historyWidgetsTree = [];
-  final _startPosition = defaultPosition;
+  String _startPosition = chess.Chess.DEFAULT_POSITION;
   bool _gameStart = false;
   bool _gameInProgress = false;
   bool _uciOk = false;
@@ -396,7 +394,8 @@ class _MyHomePageState extends State<MyHomePage> {
     }
   }
 
-  Future<void> _startNewGame() async {
+  Future<void> _startNewGame(
+      {String startPosition = chess.Chess.DEFAULT_POSITION}) async {
     final enginePath = await _loadEnginePath();
     if (enginePath == null) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -446,13 +445,13 @@ class _MyHomePageState extends State<MyHomePage> {
         duration: const Duration(milliseconds: 50),
         curve: Curves.easeIn,
       );
+      _startPosition = startPosition;
       _whitePlayerType = PlayerType.human;
       _blackPlayerType = PlayerType.computer;
       _gameStart = true;
       _gameInProgress = true;
       _gameLogic = chess.Chess();
       _gameLogic.load(_startPosition);
-      final startPosition = _startPosition;
       final parts = startPosition.split(' ');
       final whiteTurn = parts[1] == 'w';
       final moveNumber = parts[5];
@@ -624,12 +623,12 @@ class _MyHomePageState extends State<MyHomePage> {
     );
   }
 
-  void _startNewGameConfirmationAction() {
-    _startNewGame();
-  }
-
-  void _goToNewGameOptionsPage() {
-    Navigator.of(context).pushNamed('/new_game');
+  Future<void> _goToNewGameOptionsPage() async {
+    final startPosition =
+        await Navigator.of(context).pushNamed('/new_game') as String?;
+    if (startPosition != null) {
+      _startNewGame(startPosition: startPosition);
+    }
   }
 
   void _purposeRestartGame() {

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:editable_chess_board/editable_chess_board.dart';
 import 'package:flutter_i18n/flutter_i18n.dart';
+import 'package:chess_loloof64/chess_loloof64.dart' as chess;
 import '../components/dialog_buttons.dart';
 
 class NewGamePositionEditorScreenArguments {
@@ -29,6 +30,22 @@ class _NewGamePositionEditorScreenState
   void initState() {
     _positionController = PositionController(widget.initialFen);
     super.initState();
+  }
+
+  void _checkPositionAndSendIfValid() {
+    final position = _positionController.currentPosition;
+    final isNotEmpty = position.split(' ')[0] != '8/8/8/8/8/8/8/8';
+    final isValid = chess.Chess.validate_fen(position)['valid'] == true;
+    if (isNotEmpty && isValid) {
+      Navigator.of(context).pop(position);
+    } else {
+      final snackBar = SnackBar(
+        content: I18nText(
+          'new_game.position_editor.illegal_position_error',
+        ),
+      );
+      ScaffoldMessenger.of(context).showSnackBar(snackBar);
+    }
   }
 
   @override
@@ -129,9 +146,7 @@ class _NewGamePositionEditorScreenState
                 Padding(
                   padding: const EdgeInsets.all(8.0),
                   child: DialogActionButton(
-                    onPressed: () {
-                      //TODO
-                    },
+                    onPressed: _checkPositionAndSendIfValid,
                     textContent: I18nText('buttons.ok'),
                     backgroundColor: Colors.greenAccent,
                     textColor: Colors.white,

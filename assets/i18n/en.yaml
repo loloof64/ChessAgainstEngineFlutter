@@ -53,3 +53,4 @@ new_game:
         label_reset_position: "Reset position"
         label_standard_position: "Standard position"
         label_clear_position: "Clear position"
+        illegal_position_error: "Illegal position !"
