@@ -447,8 +447,9 @@ class _MyHomePageState extends State<MyHomePage> {
     _engineProcess!.stdin.writeln('uci');
   }
 
-  _startEngineEvaluation() {
+  Future<void> _startEngineEvaluation() async {
     _launchEngineIfNecessary();
+    await Future.delayed(const Duration(seconds: 1));
     _engineProcess!.stdin.writeln("position fen ${_gameLogic.fen}");
     _engineProcess!.stdin.writeln(
         "go movetime ${_prefs.getDouble('engineThinkingTime') ?? 1000.0}");
@@ -482,6 +483,7 @@ class _MyHomePageState extends State<MyHomePage> {
       _currentGameHistoryNode = _gameHistoryTree;
     });
     _updateHistoryChildrenWidgets();
+    _startEngineEvaluation();
   }
 
   void _toggleBoardOrientation() {
