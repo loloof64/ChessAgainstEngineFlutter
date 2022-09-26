@@ -51,31 +51,31 @@ class ChessHistory extends StatelessWidget {
           children: [
             ElevatedButton(
               onPressed: requestGotoFirst,
-              child: const Icon(Icons.first_page),
               style: ElevatedButton.styleFrom(
                 shape: const CircleBorder(),
               ),
+              child: const Icon(Icons.first_page),
             ),
             ElevatedButton(
               onPressed: requestGotoPrevious,
-              child: const Icon(Icons.arrow_back),
               style: ElevatedButton.styleFrom(
                 shape: const CircleBorder(),
               ),
+              child: const Icon(Icons.arrow_back),
             ),
             ElevatedButton(
               onPressed: requestGotoNext,
-              child: const Icon(Icons.arrow_forward),
               style: ElevatedButton.styleFrom(
                 shape: const CircleBorder(),
               ),
+              child: const Icon(Icons.arrow_forward),
             ),
             ElevatedButton(
               onPressed: requestGotoLast,
-              child: const Icon(Icons.last_page),
               style: ElevatedButton.styleFrom(
                 shape: const CircleBorder(),
               ),
+              child: const Icon(Icons.last_page),
             ),
           ],
         ),

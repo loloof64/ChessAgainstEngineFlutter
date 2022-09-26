@@ -1,13 +1,16 @@
 import 'dart:async';
 import 'dart:io';
 import 'dart:convert';
-import 'package:chess_against_engine/screens/settings_screen.dart';
+import 'package:chess_against_engine/screens/new_game_position_editor.dart';
+
+import '../screens/settings_screen.dart';
+import '../screens/new_game_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:simple_chess_board/models/board_arrow.dart';
 import 'package:simple_chess_board/simple_chess_board.dart';
 import 'package:chess_vectors_flutter/chess_vectors_flutter.dart';
 import 'package:flutter_i18n/loaders/decoders/yaml_decode_strategy.dart';
-import 'package:chess/chess.dart' as chess;
+import 'package:chess_loloof64/chess_loloof64.dart' as chess;
 import 'package:flutter_i18n/flutter_i18n.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:logger/logger.dart';
@@ -54,9 +57,20 @@ class MyApp extends StatelessWidget {
         Locale('es', ''),
       ],
       initialRoute: '/',
-      routes: {
-        '/': (context) => const MyHomePage(),
-        '/settings': (context) => const SettingsPage(),
+      onGenerateRoute: (settings) {
+        if (settings.name == '/') {
+          return MaterialPageRoute(builder: (context) => const MyHomePage());
+        } else if (settings.name == '/settings') {
+          return MaterialPageRoute(builder: (context) => const SettingsPage());
+        } else if (settings.name == '/new_game') {
+          return MaterialPageRoute(builder: (context) => const NewGameScreen());
+        } else if (settings.name == '/new_game_editor') {
+          return MaterialPageRoute(builder: (context) {
+            final args =
+                settings.arguments as NewGamePositionEditorScreenArguments;
+            return NewGamePositionEditorScreen(initialFen: args.initialFen);
+          });
+        }
       },
     );
   }
@@ -611,14 +625,17 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 
   void _startNewGameConfirmationAction() {
-    Navigator.of(context).pop();
     _startNewGame();
+  }
+
+  void _goToNewGameOptionsPage() {
+    Navigator.of(context).pushNamed('/new_game');
   }
 
   void _purposeRestartGame() {
     final isEmptyPosition = _gameLogic.fen == emptyPosition;
     if (isEmptyPosition) {
-      _startNewGame();
+      _goToNewGameOptionsPage();
       return;
     }
 
@@ -630,7 +647,10 @@ class _MyHomePageState extends State<MyHomePage> {
           content: I18nText('game.restart_game_msg'),
           actions: [
             DialogActionButton(
-              onPressed: _startNewGameConfirmationAction,
+              onPressed: () {
+                Navigator.of(context).pop();
+                _goToNewGameOptionsPage();
+              },
               textContent: I18nText(
                 'buttons.ok',
               ),

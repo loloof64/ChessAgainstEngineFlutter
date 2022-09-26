@@ -16,7 +16,7 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-import "package:chess/chess.dart" as chesslib;
+import "package:chess_loloof64/chess_loloof64.dart" as chesslib;
 import 'package:flutter/material.dart';
 
 extension FanConverter on String {

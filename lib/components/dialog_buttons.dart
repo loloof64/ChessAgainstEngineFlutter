@@ -35,14 +35,14 @@ class DialogActionButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return ElevatedButton(
       onPressed: onPressed,
-      child: textContent,
       style: ElevatedButton.styleFrom(
-        primary: backgroundColor,
+        backgroundColor: backgroundColor,
         textStyle: TextStyle(
           color: textColor,
         ),
         elevation: 5,
       ),
+      child: textContent,
     );
   }
 }
