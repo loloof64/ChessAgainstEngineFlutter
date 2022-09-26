@@ -99,6 +99,7 @@ class _MyHomePageState extends State<MyHomePage> {
   HistoryNode? _currentGameHistoryNode;
   HistoryNode? _selectedHistoryNode;
   List<Widget> _historyWidgetsTree = [];
+  bool _cpuCanPlay = false;
   String _startPosition = chess.Chess.DEFAULT_POSITION;
   bool _gameStart = false;
   bool _gameInProgress = false;
@@ -154,6 +155,7 @@ class _MyHomePageState extends State<MyHomePage> {
       _addMoveToHistory();
       _gameStart = false;
       _engineThinking = false;
+      _cpuCanPlay = false;
     });
 
     if (_gameLogic.game_over) {
@@ -242,7 +244,7 @@ class _MyHomePageState extends State<MyHomePage> {
         });
       }
     }
-    if (message.contains("bestmove")) {
+    if (message.contains("bestmove") && _cpuCanPlay) {
       _processEngineBestMoveMessage(message);
     }
   }
@@ -265,10 +267,9 @@ class _MyHomePageState extends State<MyHomePage> {
 
     setState(() {
       _engineThinking = true;
+      _cpuCanPlay = true;
     });
-    _engineProcess!.stdin.writeln("position fen ${_gameLogic.fen}");
-    _engineProcess!.stdin.writeln(
-        "go movetime ${_prefs.getDouble('engineThinkingTime') ?? 1000.0}");
+    _startEngineEvaluation();
   }
 
   /*
@@ -399,8 +400,10 @@ class _MyHomePageState extends State<MyHomePage> {
     }
   }
 
-  Future<void> _startNewGame(
-      {String startPosition = chess.Chess.DEFAULT_POSITION}) async {
+  Future<void> _launchEngineIfNecessary() async {
+    if (_uciOk && _readyOk) {
+      return;
+    }
     final enginePath = await _loadEnginePath();
     if (enginePath == null) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -442,6 +445,18 @@ class _MyHomePageState extends State<MyHomePage> {
     });
 
     _engineProcess!.stdin.writeln('uci');
+  }
+
+  _startEngineEvaluation() {
+    _launchEngineIfNecessary();
+    _engineProcess!.stdin.writeln("position fen ${_gameLogic.fen}");
+    _engineProcess!.stdin.writeln(
+        "go movetime ${_prefs.getDouble('engineThinkingTime') ?? 1000.0}");
+  }
+
+  Future<void> _startNewGame(
+      {String startPosition = chess.Chess.DEFAULT_POSITION}) async {
+    _launchEngineIfNecessary();
 
     setState(() {
       _score = 0.0;
@@ -613,9 +628,6 @@ class _MyHomePageState extends State<MyHomePage> {
       _blackPlayerType = PlayerType.computer;
     });
     _updateHistoryChildrenWidgets();
-    setState(() {
-      _engineThinking = false;
-    });
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Row(
@@ -888,6 +900,9 @@ class _MyHomePageState extends State<MyHomePage> {
                                       setState(() {
                                         _scoreVisible = newValue ?? false;
                                       });
+                                      if (_scoreVisible) {
+                                        _startEngineEvaluation();
+                                      }
                                     }
                                   },
                                 ),
