@@ -5,21 +5,31 @@ import 'package:simple_chess_board/simple_chess_board.dart';
 import 'package:editable_chess_board/editable_chess_board.dart';
 import '../components/dialog_buttons.dart';
 
+class NewGameScreenArguments {
+  final String initialFen;
+
+  NewGameScreenArguments(this.initialFen);
+}
+
 class NewGameScreen extends StatefulWidget {
-  const NewGameScreen({Key? key}) : super(key: key);
+  final String initialFen;
+  const NewGameScreen({
+    Key? key,
+    required this.initialFen,
+  }) : super(key: key);
 
   @override
   NewGameScreenState createState() => NewGameScreenState();
 }
 
 class NewGameScreenState extends State<NewGameScreen> {
-  final PositionController _positionController = PositionController(
-      'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1');
+  late PositionController _positionController;
   late String _positionFen;
   BoardColor _orientation = BoardColor.white;
 
   @override
   void initState() {
+    _positionController = PositionController(widget.initialFen);
     _positionFen = _positionController.currentPosition;
     super.initState();
   }

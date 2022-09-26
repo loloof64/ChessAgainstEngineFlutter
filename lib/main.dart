@@ -63,7 +63,12 @@ class MyApp extends StatelessWidget {
         } else if (settings.name == '/settings') {
           return MaterialPageRoute(builder: (context) => const SettingsPage());
         } else if (settings.name == '/new_game') {
-          return MaterialPageRoute(builder: (context) => const NewGameScreen());
+          final args = settings.arguments as NewGameScreenArguments;
+          return MaterialPageRoute(
+            builder: (context) => NewGameScreen(
+              initialFen: args.initialFen,
+            ),
+          );
         } else if (settings.name == '/new_game_editor') {
           return MaterialPageRoute(builder: (context) {
             final args =
@@ -608,11 +613,9 @@ class _MyHomePageState extends State<MyHomePage> {
       _blackPlayerType = PlayerType.computer;
     });
     _updateHistoryChildrenWidgets();
-    /*
     setState(() {
       _engineThinking = false;
     });
-    */
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Row(
@@ -624,8 +627,13 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 
   Future<void> _goToNewGameOptionsPage() async {
-    final startPosition =
-        await Navigator.of(context).pushNamed('/new_game') as String?;
+    String editPosition = _gameLogic.fen;
+    final editPositionEmpty = editPosition.split(' ')[0] == '8/8/8/8/8/8/8/8';
+    if (editPositionEmpty) editPosition = chess.Chess.DEFAULT_POSITION;
+    final startPosition = await Navigator.of(context).pushNamed(
+      '/new_game',
+      arguments: NewGameScreenArguments(editPosition),
+    ) as String?;
     if (startPosition != null) {
       _startNewGame(startPosition: startPosition);
     }
