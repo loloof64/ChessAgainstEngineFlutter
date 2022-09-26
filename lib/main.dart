@@ -832,6 +832,7 @@ class _MyHomePageState extends State<MyHomePage> {
   Widget build(BuildContext context) {
     var historySize = _gameInProgress ? 575 : 625;
     if (_skillLevelEditable) historySize -= 45;
+    if (_scoreVisible) historySize -= 40;
     return Scaffold(
       appBar: AppBar(
         title: I18nText('app.title'),
@@ -915,20 +916,20 @@ class _MyHomePageState extends State<MyHomePage> {
                                     }
                                   },
                                 ),
-                                _scoreVisible
-                                    ? Text(
-                                        _score.toString(),
-                                        style: TextStyle(
-                                          fontSize: 40.0,
-                                          color: _score < 0
-                                              ? Colors.red
-                                              : _score > 0
-                                                  ? Colors.green
-                                                  : Colors.black,
-                                        ),
-                                      )
-                                    : const SizedBox(),
                               ],
+                            )
+                          : const SizedBox(),
+                      _scoreVisible
+                          ? Text(
+                              _score.toString(),
+                              style: TextStyle(
+                                fontSize: 40.0,
+                                color: _score < 0
+                                    ? Colors.red
+                                    : _score > 0
+                                        ? Colors.green
+                                        : Colors.black,
+                              ),
                             )
                           : const SizedBox(),
                       _skillLevelEditable
@@ -960,11 +961,11 @@ class _MyHomePageState extends State<MyHomePage> {
                     child: ChessHistory(
                       historyTree: _gameHistoryTree,
                       scrollController: _historyScrollController,
-                      children: _historyWidgetsTree,
                       requestGotoFirst: _requestGotoFirst,
                       requestGotoPrevious: _requestGotoPrevious,
                       requestGotoNext: _requestGotoNext,
                       requestGotoLast: _requestGotoLast,
+                      children: _historyWidgetsTree,
                     ),
                   ),
                 ],
