@@ -234,13 +234,20 @@ class _MyHomePageState extends State<MyHomePage> {
       return;
     }
     if (message.contains("score cp")) {
+      final cpuHasBlack = _whitePlayerType == PlayerType.human &&
+          _blackPlayerType == PlayerType.computer;
+      final cpuTurnAsBlack = cpuHasBlack && _cpuCanPlay;
       final scores = RegExp(r"score cp ([0-9-]+)")
           .allMatches(message)
           .map((e) => e.group(1))
           .map((e) => int.parse(e!) / 100.0);
       for (var score in scores) {
+        var realScore = score;
+        if (cpuTurnAsBlack) {
+          realScore *= -1;
+        }
         setState(() {
-          _score = score;
+          _score = realScore;
         });
       }
     }
