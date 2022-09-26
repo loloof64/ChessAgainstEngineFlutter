@@ -11,7 +11,7 @@ game:
     restart_game_title: "New game ?"
     restart_game_msg: "Do you want to finish current game and start a new one ?"
     cannot_start_engine: "Cannot start the configured engine !"
-    show_evaluation: "Show evaluation"
+    show_evaluation: "Show player evaluation"
     engine_level: "Engine level"
 game_termination:
     black_checkmate_white: "Black has won by checkmate."

@@ -11,7 +11,7 @@ game:
     restart_game_title: "¿Nuevo juego?"
     restart_game_msg: "¿Quiere detener el juego actual y comenzar uno nuevo?"
     cannot_start_engine: "¡No se puede arrancar el motor configurado!"
-    show_evaluation: "Mostrar evaluación"
+    show_evaluation: "Mostrar jugador evaluación"
     engine_level: "Nivel del motor"
 game_termination:
     black_checkmate_white: "Los Negros ha ganado por jaque mate."
