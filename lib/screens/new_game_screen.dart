@@ -5,6 +5,16 @@ import 'package:simple_chess_board/simple_chess_board.dart';
 import 'package:editable_chess_board/editable_chess_board.dart';
 import '../components/dialog_buttons.dart';
 
+class NewGameParameters {
+  final String startPositionFen;
+  final bool playerHasWhite;
+
+  NewGameParameters({
+    required this.startPositionFen,
+    required this.playerHasWhite,
+  });
+}
+
 class NewGameScreenArguments {
   final String initialFen;
 
@@ -25,6 +35,7 @@ class NewGameScreen extends StatefulWidget {
 class NewGameScreenState extends State<NewGameScreen> {
   late PositionController _positionController;
   late String _positionFen;
+  bool _playerHasWhite = true;
   BoardColor _orientation = BoardColor.white;
 
   @override
@@ -46,6 +57,13 @@ class NewGameScreenState extends State<NewGameScreen> {
         _positionFen = _positionController.currentPosition;
       });
     }
+  }
+
+  void _onTurnChanged(bool newTurnValue) {
+    setState(() {
+      _playerHasWhite = newTurnValue;
+      _orientation = _playerHasWhite ? BoardColor.white : BoardColor.black;
+    });
   }
 
   @override
@@ -71,6 +89,45 @@ class NewGameScreenState extends State<NewGameScreen> {
               ),
               Padding(
                 padding: const EdgeInsets.all(8.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    I18nText('new_game.position_editor.label_player_side'),
+                    ListTile(
+                      title: Text(
+                        FlutterI18n.translate(
+                          context,
+                          'new_game.position_editor.label_white_player',
+                        ),
+                      ),
+                      leading: Radio<bool>(
+                        groupValue: _playerHasWhite,
+                        value: true,
+                        onChanged: (value) {
+                          _onTurnChanged(value ?? true);
+                        },
+                      ),
+                    ),
+                    ListTile(
+                      title: Text(
+                        FlutterI18n.translate(
+                          context,
+                          'new_game.position_editor.label_black_player',
+                        ),
+                      ),
+                      leading: Radio<bool>(
+                        groupValue: _playerHasWhite,
+                        value: false,
+                        onChanged: (value) {
+                          _onTurnChanged(value ?? false);
+                        },
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.all(8.0),
                 child: ElevatedButton(
                   onPressed: () {
                     _showEditPositionPage();
@@ -83,14 +140,19 @@ class NewGameScreenState extends State<NewGameScreen> {
               Padding(
                 padding: const EdgeInsets.all(8.0),
                 child: Row(
-                  mainAxisAlignment: MainAxisAlignment.end,
+                  mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Padding(
                       padding: const EdgeInsets.all(2.0),
                       child: DialogActionButton(
                         onPressed: () async {
-                          Navigator.of(context)
-                              .pop(_positionController.currentPosition);
+                          Navigator.of(context).pop(
+                            NewGameParameters(
+                              startPositionFen:
+                                  _positionController.currentPosition,
+                              playerHasWhite: _playerHasWhite,
+                            ),
+                          );
                         },
                         textContent: I18nText('buttons.ok'),
                         backgroundColor: Colors.greenAccent,

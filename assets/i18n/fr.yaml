@@ -54,3 +54,4 @@ new_game:
         label_standard_position: "Position standard"
         label_clear_position: "Effacer la position"
         illegal_position_error: "Position illégale !"
+        label_player_side: "Votre côté"

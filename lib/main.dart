@@ -462,8 +462,10 @@ class _MyHomePageState extends State<MyHomePage> {
         "go movetime ${_prefs.getDouble('engineThinkingTime') ?? 1000.0}");
   }
 
-  Future<void> _startNewGame(
-      {String startPosition = chess.Chess.DEFAULT_POSITION}) async {
+  Future<void> _startNewGame({
+    String startPosition = chess.Chess.DEFAULT_POSITION,
+    bool playerHasWhite = true,
+  }) async {
     _launchEngineIfNecessary();
 
     setState(() {
@@ -474,8 +476,11 @@ class _MyHomePageState extends State<MyHomePage> {
         curve: Curves.easeIn,
       );
       _startPosition = startPosition;
-      _whitePlayerType = PlayerType.human;
-      _blackPlayerType = PlayerType.computer;
+      _whitePlayerType =
+          playerHasWhite ? PlayerType.human : PlayerType.computer;
+      _blackPlayerType =
+          playerHasWhite ? PlayerType.computer : PlayerType.human;
+      _orientation = playerHasWhite ? BoardColor.white : BoardColor.black;
       _gameStart = true;
       _gameInProgress = true;
       _gameLogic = chess.Chess();
@@ -491,6 +496,7 @@ class _MyHomePageState extends State<MyHomePage> {
     });
     _updateHistoryChildrenWidgets();
     _startEngineEvaluation();
+    _makeComputerMove();
   }
 
   void _toggleBoardOrientation() {
@@ -651,12 +657,15 @@ class _MyHomePageState extends State<MyHomePage> {
     String editPosition = _gameLogic.fen;
     final editPositionEmpty = editPosition.split(' ')[0] == '8/8/8/8/8/8/8/8';
     if (editPositionEmpty) editPosition = chess.Chess.DEFAULT_POSITION;
-    final startPosition = await Navigator.of(context).pushNamed(
+    final gameParameters = await Navigator.of(context).pushNamed(
       '/new_game',
       arguments: NewGameScreenArguments(editPosition),
-    ) as String?;
-    if (startPosition != null) {
-      _startNewGame(startPosition: startPosition);
+    ) as NewGameParameters?;
+    if (gameParameters != null) {
+      _startNewGame(
+        startPosition: gameParameters.startPositionFen,
+        playerHasWhite: gameParameters.playerHasWhite,
+      );
     }
   }
 
