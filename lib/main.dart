@@ -1,7 +1,8 @@
 import 'dart:async';
-import 'dart:io';
-import 'dart:convert';
 import 'package:chess_against_engine/screens/new_game_position_editor.dart';
+import 'package:stockfish_chess_engine/stockfish.dart';
+import 'package:stockfish_chess_engine/stockfish_state.dart';
+import 'package:window_manager/window_manager.dart';
 
 import '../screens/settings_screen.dart';
 import '../screens/new_game_screen.dart';
@@ -92,7 +93,7 @@ class MyHomePage extends StatefulWidget {
   State<MyHomePage> createState() => _MyHomePageState();
 }
 
-class _MyHomePageState extends State<MyHomePage> {
+class _MyHomePageState extends State<MyHomePage> with WindowListener {
   chess.Chess _gameLogic = chess.Chess();
   BoardColor _orientation = BoardColor.white;
   PlayerType _whitePlayerType = PlayerType.computer;
@@ -105,8 +106,6 @@ class _MyHomePageState extends State<MyHomePage> {
   String _startPosition = chess.Chess.DEFAULT_POSITION;
   bool _gameStart = false;
   bool _gameInProgress = false;
-  bool _uciOk = false;
-  bool _readyOk = false;
   bool _skillLevelEditable = false;
   int _skillLevel = -1;
   int _skillLevelDefault = -1;
@@ -119,21 +118,52 @@ class _MyHomePageState extends State<MyHomePage> {
       ScrollController(initialScrollOffset: 0.0, keepScrollOffset: true);
   BoardArrow? _lastMoveArrow;
   late SharedPreferences _prefs;
-  Process? _engineProcess;
-  StreamSubscription<String>? _engineStdOutSubscription;
+  late Stockfish _stockfish;
+  late StreamSubscription<String> _stockfishOutputSubsciption;
 
   @override
   void initState() {
+    windowManager.addListener(this);
+    _overrideDefaultCloseHandler();
+    _doStartStockfish();
     _gameLogic.load(emptyPosition);
     _initPreferences();
     super.initState();
   }
 
+  void _doStartStockfish() async {
+    _stockfish = Stockfish();
+    _stockfishOutputSubsciption = _stockfish.stdout.listen((message) {
+      _processEngineStdOut(message);
+    });
+    await Future.delayed(const Duration(seconds: 2));
+    _stockfish.stdin = 'uci';
+    await Future.delayed(const Duration(seconds: 3));
+    _stockfish.stdin = 'isready';
+  }
+
+  void _stopStockfish() async {
+    if (_stockfish.state.value == StockfishState.disposed ||
+        _stockfish.state.value == StockfishState.error) {
+      return;
+    }
+    _stockfishOutputSubsciption.cancel();
+    _stockfish.stdin = 'quit';
+    await Future.delayed(const Duration(milliseconds: 200));
+    setState(() {});
+  }
+
   @override
   void dispose() {
-    _engineStdOutSubscription?.cancel();
-    _engineProcess?.kill();
+    _stopStockfish();
     super.dispose();
+  }
+
+  @override
+  void onWindowClose() async {
+    _stopStockfish();
+    await Future.delayed(const Duration(milliseconds: 200));
+    await windowManager.destroy();
   }
 
   void _processEngineBestMoveMessage(String message) {
@@ -222,16 +252,10 @@ class _MyHomePageState extends State<MyHomePage> {
       }
     }
     if (message.contains("uciok")) {
-      setState(() {
-        _uciOk = true;
-      });
-      _engineProcess!.stdin.writeln('isready');
+      _stockfish.stdin = 'isready';
       return;
     }
     if (message.contains("readyok")) {
-      setState(() {
-        _readyOk = true;
-      });
       _makeComputerMove();
       return;
     }
@@ -260,10 +284,6 @@ class _MyHomePageState extends State<MyHomePage> {
 
   Future<void> _initPreferences() async {
     _prefs = await SharedPreferences.getInstance();
-  }
-
-  Future<String?> _loadEnginePath() async {
-    return _prefs.getString('enginePath');
   }
 
   void _makeComputerMove() {
@@ -409,69 +429,22 @@ class _MyHomePageState extends State<MyHomePage> {
     }
   }
 
-  Future<void> _launchEngineIfNecessary() async {
-    if (_uciOk && _readyOk) {
-      return;
-    }
-    final enginePath = await _loadEnginePath();
-    if (enginePath == null) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          duration: const Duration(seconds: 3),
-          content: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [I18nText('engine.not_configured')],
-          ),
-        ),
-      );
-      return;
-    }
-
-    _engineStdOutSubscription?.cancel();
-    _engineProcess?.kill();
-
-    try {
-      _engineProcess = await Process.start(enginePath, []);
-    } on Exception catch (_) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          duration: const Duration(seconds: 2),
-          content: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [I18nText('game.cannot_start_engine')],
-          ),
-        ),
-      );
-      return;
-    }
-
-    setState(() {
-      _uciOk = false;
-      _readyOk = false;
-      _engineStdOutSubscription = _engineProcess!.stdout
-          .transform(utf8.decoder)
-          .listen(_processEngineStdOut);
-    });
-
-    _engineProcess!.stdin.writeln('uci');
+  Future<void> _overrideDefaultCloseHandler() async {
+    await windowManager.setPreventClose(true);
+    setState(() {});
   }
 
   Future<void> _startEngineEvaluation() async {
-    _launchEngineIfNecessary();
     await Future.delayed(const Duration(seconds: 1));
-    _engineProcess!.stdin.writeln("position fen ${_gameLogic.fen}");
-    _engineProcess!.stdin.writeln(
-        "go movetime ${_prefs.getDouble('engineThinkingTime') ?? 1000.0}");
+    _stockfish.stdin = "position fen ${_gameLogic.fen}";
+    _stockfish.stdin =
+        "go movetime ${_prefs.getDouble('engineThinkingTime') ?? 1000.0}";
   }
 
   Future<void> _startNewGame({
     String startPosition = chess.Chess.DEFAULT_POSITION,
     bool playerHasWhite = true,
   }) async {
-    _launchEngineIfNecessary();
-
     setState(() {
       _score = 0.0;
       _historyScrollController.animateTo(
@@ -958,8 +931,8 @@ class _MyHomePageState extends State<MyHomePage> {
                                   onChanged: (newValue) {
                                     setState(() {
                                       _skillLevel = newValue.toInt();
-                                      _engineProcess!.stdin.writeln(
-                                          'setoption name Skill Level value $_skillLevel');
+                                      _stockfish.stdin =
+                                          'setoption name Skill Level value $_skillLevel';
                                     });
                                   },
                                 ),

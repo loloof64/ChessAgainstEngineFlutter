@@ -45,6 +45,8 @@ dependencies:
   fpdart: ^0.2.0
   chess_loloof64: ^0.1.2
   editable_chess_board: ^0.1.2
+  stockfish_chess_engine: ^0.2.0
+  window_manager: ^0.2.7
 
 dev_dependencies:
   flutter_test:

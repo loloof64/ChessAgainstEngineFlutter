@@ -10,7 +10,6 @@ game:
     stopped: "Game stopped."
     restart_game_title: "New game ?"
     restart_game_msg: "Do you want to finish current game and start a new one ?"
-    cannot_start_engine: "Cannot start the configured engine !"
     show_evaluation: "Show player evaluation"
     engine_level: "Engine level"
 game_termination:
@@ -20,13 +19,8 @@ game_termination:
     repetitions: "Draw by threefold repetitions."
     insufficient_material: "Draw by insufficient material."
     fifty_moves: "Draw by 50 moves' rule."
-engine:
-    not_configured: "You must configure the chess engine path before !"
 settings:
     title: "Settings"
-    select: "Select"
-    engine_path_label: "Chess engine path"
-    no_engine: "No engine"
     engine_thinking_time_label: "Engine thinking time"
     engine_thinking_time_value: "{time} s"
     saved: "Settings saved"

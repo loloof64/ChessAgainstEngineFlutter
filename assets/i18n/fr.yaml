@@ -10,7 +10,6 @@ game:
     stopped: "Partie interrompue."
     restart_game_title: "Nouvelle partie ?"
     restart_game_msg: "Voulez-vous arrêter la partie en cours et en démarrer une nouvelle ?"
-    cannot_start_engine: "Impossible de lancer le moteur configuré !"
     show_evaluation: "Montrer l'évaluation joueur"
     engine_level: "Niveau du moteur"
 game_termination:
@@ -20,13 +19,8 @@ game_termination:
     repetitions: "Nulle par triple répétition."
     insufficient_material: "Nulle par insuffisance matérielle."
     fifty_moves: "Nulle par la règle des 50 coups."
-engine:
-    not_configured: "Vous devez configurer le chemin du moteur d'échecs auparavant !"
 settings:
     title: "Paramètres"
-    select: "Choisir"
-    engine_path_label: "Chemin du moteur d'échecs"
-    no_engine: "Aucun moteur"
     engine_thinking_time_label: "Temps réflexion ordinateur"
     engine_thinking_time_value: "{time} s"
     saved: "Paramètres sauvegardés"
