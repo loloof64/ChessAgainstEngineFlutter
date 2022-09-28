@@ -75,6 +75,8 @@ class MyApp extends StatelessWidget {
                 settings.arguments as NewGamePositionEditorScreenArguments;
             return NewGamePositionEditorScreen(initialFen: args.initialFen);
           });
+        } else {
+          return MaterialPageRoute(builder: (context) => const MyHomePage());
         }
       },
     );
@@ -413,6 +415,7 @@ class _MyHomePageState extends State<MyHomePage> {
     }
     final enginePath = await _loadEnginePath();
     if (enginePath == null) {
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           duration: const Duration(seconds: 3),
@@ -431,6 +434,7 @@ class _MyHomePageState extends State<MyHomePage> {
     try {
       _engineProcess = await Process.start(enginePath, []);
     } on Exception catch (_) {
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           duration: const Duration(seconds: 2),
@@ -824,6 +828,7 @@ class _MyHomePageState extends State<MyHomePage> {
     if (_gameInProgress) return;
     var success = await Navigator.of(context).pushNamed('/settings');
     if (success == true) {
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Row(
