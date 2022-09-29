@@ -817,9 +817,9 @@ class _MyHomePageState extends State<MyHomePage> with WindowListener {
 
   @override
   Widget build(BuildContext context) {
-    var historySize = _gameInProgress ? 575 : 625;
-    if (_skillLevelEditable) historySize -= 45;
-    if (_scoreVisible) historySize -= 40;
+    double historyHeight = _gameInProgress ? 570 : 620;
+    if (_skillLevelEditable) historyHeight -= 45;
+    if (_scoreVisible) historyHeight -= 40;
     return Scaffold(
       appBar: AppBar(
         title: I18nText('app.title'),
@@ -876,86 +876,91 @@ class _MyHomePageState extends State<MyHomePage> with WindowListener {
               const SizedBox(
                 width: 30,
               ),
-              Column(
-                children: [
-                  Column(
-                    children: [
-                      _gameInProgress
-                          ? Row(
-                              children: [
-                                I18nText(
-                                  'game.show_evaluation',
-                                  child: const Text(
-                                    '',
-                                    style: TextStyle(fontSize: 40.0),
+              SizedBox(
+                height: 500,
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    Column(
+                      children: [
+                        _gameInProgress
+                            ? Row(
+                                children: [
+                                  I18nText(
+                                    'game.show_evaluation',
+                                    child: const Text(
+                                      '',
+                                      style: TextStyle(fontSize: 40.0),
+                                    ),
                                   ),
-                                ),
-                                Checkbox(
-                                  value: _scoreVisible,
-                                  onChanged: (newValue) {
-                                    if (_gameInProgress) {
-                                      setState(() {
-                                        _scoreVisible = newValue ?? false;
-                                      });
-                                      if (_scoreVisible) {
-                                        _startEngineEvaluation();
+                                  Checkbox(
+                                    value: _scoreVisible,
+                                    onChanged: (newValue) {
+                                      if (_gameInProgress) {
+                                        setState(() {
+                                          _scoreVisible = newValue ?? false;
+                                        });
+                                        if (_scoreVisible) {
+                                          _startEngineEvaluation();
+                                        }
                                       }
-                                    }
-                                  },
+                                    },
+                                  ),
+                                ],
+                              )
+                            : const SizedBox(),
+                        _scoreVisible
+                            ? Text(
+                                _score.toString(),
+                                style: TextStyle(
+                                  fontSize: 30.0,
+                                  color: _score < 0
+                                      ? Colors.red
+                                      : _score > 0
+                                          ? Colors.green
+                                          : Colors.black,
                                 ),
-                              ],
-                            )
-                          : const SizedBox(),
-                      _scoreVisible
-                          ? Text(
-                              _score.toString(),
-                              style: TextStyle(
-                                fontSize: 40.0,
-                                color: _score < 0
-                                    ? Colors.red
-                                    : _score > 0
-                                        ? Colors.green
-                                        : Colors.black,
-                              ),
-                            )
-                          : const SizedBox(),
-                      _skillLevelEditable
-                          ? Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                I18nText('game.engine_level'),
-                                Slider(
-                                  value: _skillLevel.toDouble(),
-                                  min: _skillLevelMin.toDouble(),
-                                  max: _skillLevelMax.toDouble(),
-                                  onChanged: (newValue) {
-                                    setState(() {
-                                      _skillLevel = newValue.toInt();
-                                      _stockfish.stdin =
-                                          'setoption name Skill Level value $_skillLevel';
-                                    });
-                                  },
-                                ),
-                                Text(_skillLevel.toString()),
-                              ],
-                            )
-                          : const SizedBox(),
-                    ],
-                  ),
-                  SizedBox(
-                    width: 550,
-                    height: historySize.toDouble(),
-                    child: ChessHistory(
-                      historyTree: _gameHistoryTree,
-                      scrollController: _historyScrollController,
-                      requestGotoFirst: _requestGotoFirst,
-                      requestGotoPrevious: _requestGotoPrevious,
-                      requestGotoNext: _requestGotoNext,
-                      requestGotoLast: _requestGotoLast,
-                      children: _historyWidgetsTree,
+                              )
+                            : const SizedBox(),
+                        _skillLevelEditable
+                            ? Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  I18nText('game.engine_level'),
+                                  Slider(
+                                    value: _skillLevel.toDouble(),
+                                    min: _skillLevelMin.toDouble(),
+                                    max: _skillLevelMax.toDouble(),
+                                    onChanged: (newValue) {
+                                      setState(() {
+                                        _skillLevel = newValue.toInt();
+                                        _stockfish.stdin =
+                                            'setoption name Skill Level value $_skillLevel';
+                                      });
+                                    },
+                                  ),
+                                  Text(_skillLevel.toString()),
+                                ],
+                              )
+                            : const SizedBox(),
+                      ],
                     ),
-                  ),
-                ],
+                    SizedBox(
+                      width: 500,
+                      height: historyHeight,
+                      child: ChessHistory(
+                        historyTree: _gameHistoryTree,
+                        scrollController: _historyScrollController,
+                        requestGotoFirst: _requestGotoFirst,
+                        requestGotoPrevious: _requestGotoPrevious,
+                        requestGotoNext: _requestGotoNext,
+                        requestGotoLast: _requestGotoLast,
+                        children: _historyWidgetsTree,
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ],
           ),
