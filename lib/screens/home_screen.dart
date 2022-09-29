@@ -108,10 +108,10 @@ class _MyHomePageState extends State<MyHomePage> with WindowListener {
     final promotion =
         moveAlgebraic.length > 4 ? moveAlgebraic.substring(4, 5) : null;
 
-    final matchingMove =
+    final moveHasBeenMade =
         _gameLogic.move({'from': from, 'to': to, 'promotion': promotion});
 
-    if (!matchingMove) return;
+    if (!moveHasBeenMade) return;
 
     setState(() {
       _lastMoveArrow = BoardArrow(from: from, to: to, color: Colors.blueAccent);
@@ -312,12 +312,12 @@ class _MyHomePageState extends State<MyHomePage> with WindowListener {
   }
 
   void _tryMakingMove({required ShortMove move}) {
-    final matchingMove = _gameLogic.move({
+    final moveHasBeenMade = _gameLogic.move({
       'from': move.from,
       'to': move.to,
       'promotion': move.promotion.map((t) => t.name).toNullable(),
     });
-    if (!matchingMove) {
+    if (moveHasBeenMade) {
       setState(() {
         _addMoveToHistory();
         _gameStart = false;
