@@ -35,13 +35,15 @@ class NewGameScreen extends StatefulWidget {
 class NewGameScreenState extends State<NewGameScreen> {
   late PositionController _positionController;
   late String _positionFen;
-  bool _playerHasWhite = true;
-  BoardColor _orientation = BoardColor.white;
+  late bool _playerHasWhite;
+  late BoardColor _orientation;
 
   @override
   void initState() {
     _positionController = PositionController(widget.initialFen);
     _positionFen = _positionController.currentPosition;
+    _playerHasWhite = _positionFen.split(' ')[1] == 'w';
+    _orientation = _playerHasWhite ? BoardColor.white : BoardColor.black;
     super.initState();
   }
 
