@@ -69,10 +69,11 @@ class _MyHomePageState extends State<MyHomePage> with WindowListener {
     _stockfishOutputSubsciption = _stockfish.stdout.listen((message) {
       _processEngineStdOut(message);
     });
-    await Future.delayed(const Duration(seconds: 2));
+    await Future.delayed(const Duration(milliseconds: 800));
     _stockfish.stdin = 'uci';
-    await Future.delayed(const Duration(seconds: 3));
+    await Future.delayed(const Duration(milliseconds: 200));
     _stockfish.stdin = 'isready';
+    await Future.delayed(const Duration(milliseconds: 50));
     setState(() {});
   }
 
