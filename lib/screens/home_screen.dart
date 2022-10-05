@@ -748,154 +748,179 @@ class _MyHomePageState extends State<MyHomePage> with WindowListener {
 
   @override
   Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: _buildAppBar(),
+      body: _buildBody(),
+    );
+  }
+
+  PreferredSizeWidget _buildAppBar() {
+    return AppBar(
+      title: I18nText('app.title'),
+      actions: [
+        IconButton(
+          onPressed: _purposeRestartGame,
+          icon: const Icon(Icons.add),
+        ),
+        IconButton(
+          onPressed: _toggleBoardOrientation,
+          icon: const Icon(Icons.swap_vert),
+        ),
+        IconButton(
+          onPressed: _purposeStopGame,
+          icon: const Icon(Icons.pan_tool),
+        ),
+        IconButton(
+          onPressed: _accessSettings,
+          icon: const Icon(Icons.settings),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildBody() {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: <Widget>[
+            _buildChessBoardZone(),
+            const SizedBox(
+              width: 30,
+            ),
+            _buildInformationZone(),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildChessBoardZone() {
+    return SizedBox(
+      height: 600,
+      child: Stack(
+        children: [
+          SimpleChessBoard(
+              lastMoveToHighlight: _lastMoveArrow,
+              fen: _gameLogic.fen,
+              orientation: _orientation,
+              whitePlayerType: _whitePlayerType,
+              blackPlayerType: _blackPlayerType,
+              onMove: _tryMakingMove,
+              onPromote: _handlePromotion),
+          _engineThinking
+              ? const Center(
+                  child: SizedBox(
+                    width: 600,
+                    height: 600,
+                    child: CircularProgressIndicator(),
+                  ),
+                )
+              : const SizedBox(),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildInformationZone() {
+    return SizedBox(
+      height: 500,
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          _buildEvaluationZone(),
+          _buildHistoryZone(),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildEvaluationZone() {
+    return Column(
+      children: [
+        _gameInProgress
+            ? Row(
+                children: [
+                  I18nText(
+                    'game.show_evaluation',
+                    child: const Text(
+                      '',
+                      style: TextStyle(fontSize: 40.0),
+                    ),
+                  ),
+                  Checkbox(
+                    value: _scoreVisible,
+                    onChanged: (newValue) {
+                      if (_gameInProgress) {
+                        setState(() {
+                          _scoreVisible = newValue ?? false;
+                        });
+                        if (_scoreVisible) {
+                          _startEngineEvaluation();
+                        }
+                      }
+                    },
+                  ),
+                ],
+              )
+            : const SizedBox(),
+        _scoreVisible
+            ? Text(
+                _score.toString(),
+                style: TextStyle(
+                  fontSize: 30.0,
+                  color: _score < 0
+                      ? Colors.red
+                      : _score > 0
+                          ? Colors.green
+                          : Colors.black,
+                ),
+              )
+            : const SizedBox(),
+        _skillLevelEditable
+            ? Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  I18nText('game.engine_level'),
+                  Slider(
+                    value: _skillLevel.toDouble(),
+                    min: _skillLevelMin.toDouble(),
+                    max: _skillLevelMax.toDouble(),
+                    onChanged: (newValue) {
+                      setState(() {
+                        _skillLevel = newValue.toInt();
+                        _stockfish.stdin =
+                            'setoption name Skill Level value $_skillLevel';
+                      });
+                    },
+                  ),
+                  Text(_skillLevel.toString()),
+                ],
+              )
+            : const SizedBox(),
+      ],
+    );
+  }
+
+  Widget _buildHistoryZone() {
     double historyHeight = _gameInProgress ? 570 : 620;
     if (_skillLevelEditable) historyHeight -= 45;
     if (_scoreVisible) historyHeight -= 40;
-    return Scaffold(
-      appBar: AppBar(
-        title: I18nText('app.title'),
-        actions: [
-          IconButton(
-            onPressed: _purposeRestartGame,
-            icon: const Icon(Icons.add),
-          ),
-          IconButton(
-            onPressed: _toggleBoardOrientation,
-            icon: const Icon(Icons.swap_vert),
-          ),
-          IconButton(
-            onPressed: _purposeStopGame,
-            icon: const Icon(Icons.pan_tool),
-          ),
-          IconButton(
-            onPressed: _accessSettings,
-            icon: const Icon(Icons.settings),
-          ),
-        ],
-      ),
-      body: Center(
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: <Widget>[
-              SizedBox(
-                height: 600,
-                child: Stack(
-                  children: [
-                    SimpleChessBoard(
-                        lastMoveToHighlight: _lastMoveArrow,
-                        fen: _gameLogic.fen,
-                        orientation: _orientation,
-                        whitePlayerType: _whitePlayerType,
-                        blackPlayerType: _blackPlayerType,
-                        onMove: _tryMakingMove,
-                        onPromote: _handlePromotion),
-                    _engineThinking
-                        ? const Center(
-                            child: SizedBox(
-                              width: 600,
-                              height: 600,
-                              child: CircularProgressIndicator(),
-                            ),
-                          )
-                        : const SizedBox(),
-                  ],
-                ),
-              ),
-              const SizedBox(
-                width: 30,
-              ),
-              SizedBox(
-                height: 500,
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    Column(
-                      children: [
-                        _gameInProgress
-                            ? Row(
-                                children: [
-                                  I18nText(
-                                    'game.show_evaluation',
-                                    child: const Text(
-                                      '',
-                                      style: TextStyle(fontSize: 40.0),
-                                    ),
-                                  ),
-                                  Checkbox(
-                                    value: _scoreVisible,
-                                    onChanged: (newValue) {
-                                      if (_gameInProgress) {
-                                        setState(() {
-                                          _scoreVisible = newValue ?? false;
-                                        });
-                                        if (_scoreVisible) {
-                                          _startEngineEvaluation();
-                                        }
-                                      }
-                                    },
-                                  ),
-                                ],
-                              )
-                            : const SizedBox(),
-                        _scoreVisible
-                            ? Text(
-                                _score.toString(),
-                                style: TextStyle(
-                                  fontSize: 30.0,
-                                  color: _score < 0
-                                      ? Colors.red
-                                      : _score > 0
-                                          ? Colors.green
-                                          : Colors.black,
-                                ),
-                              )
-                            : const SizedBox(),
-                        _skillLevelEditable
-                            ? Row(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  I18nText('game.engine_level'),
-                                  Slider(
-                                    value: _skillLevel.toDouble(),
-                                    min: _skillLevelMin.toDouble(),
-                                    max: _skillLevelMax.toDouble(),
-                                    onChanged: (newValue) {
-                                      setState(() {
-                                        _skillLevel = newValue.toInt();
-                                        _stockfish.stdin =
-                                            'setoption name Skill Level value $_skillLevel';
-                                      });
-                                    },
-                                  ),
-                                  Text(_skillLevel.toString()),
-                                ],
-                              )
-                            : const SizedBox(),
-                      ],
-                    ),
-                    SizedBox(
-                      width: 500,
-                      height: historyHeight,
-                      child: ChessHistory(
-                        historyTree: _gameHistoryTree,
-                        scrollController: _historyScrollController,
-                        requestGotoFirst: _requestGotoFirst,
-                        requestGotoPrevious: _requestGotoPrevious,
-                        requestGotoNext: _requestGotoNext,
-                        requestGotoLast: _requestGotoLast,
-                        children: _historyWidgetsTree,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
+
+    return SizedBox(
+      width: 500,
+      height: historyHeight,
+      child: ChessHistory(
+        historyTree: _gameHistoryTree,
+        scrollController: _historyScrollController,
+        requestGotoFirst: _requestGotoFirst,
+        requestGotoPrevious: _requestGotoPrevious,
+        requestGotoNext: _requestGotoNext,
+        requestGotoLast: _requestGotoLast,
+        children: _historyWidgetsTree,
       ),
     );
   }
