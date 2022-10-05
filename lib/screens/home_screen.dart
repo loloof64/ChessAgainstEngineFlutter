@@ -1,6 +1,8 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
+
 import 'package:stockfish_chess_engine/stockfish.dart';
 import 'package:stockfish_chess_engine/stockfish_state.dart';
 import 'package:window_manager/window_manager.dart';
@@ -71,6 +73,7 @@ class _MyHomePageState extends State<MyHomePage> with WindowListener {
     _stockfish.stdin = 'uci';
     await Future.delayed(const Duration(seconds: 3));
     _stockfish.stdin = 'isready';
+    setState(() {});
   }
 
   void _stopStockfish() async {
@@ -755,6 +758,23 @@ class _MyHomePageState extends State<MyHomePage> with WindowListener {
   }
 
   PreferredSizeWidget _buildAppBar() {
+    Color stockfishStatusColor;
+
+    switch (_stockfish.state.value) {
+      case StockfishState.disposed:
+        stockfishStatusColor = Colors.black;
+        break;
+      case StockfishState.starting:
+        stockfishStatusColor = Colors.orange;
+        break;
+      case StockfishState.ready:
+        stockfishStatusColor = Colors.green;
+        break;
+      case StockfishState.error:
+        stockfishStatusColor = Colors.red;
+        break;
+    }
+
     return AppBar(
       title: I18nText('app.title'),
       actions: [
@@ -774,6 +794,37 @@ class _MyHomePageState extends State<MyHomePage> with WindowListener {
           onPressed: _accessSettings,
           icon: const Icon(Icons.settings),
         ),
+        if (!kReleaseMode)
+          DecoratedBox(
+            decoration: BoxDecoration(
+              border: Border.all(
+                color: Colors.red,
+                width: 5.0,
+              ),
+            ),
+            child: Row(
+              children: [
+                IconButton(
+                  onPressed: _doStartStockfish,
+                  icon: const Icon(
+                    Icons.start,
+                  ),
+                ),
+                IconButton(
+                  onPressed: _stopStockfish,
+                  icon: const Icon(
+                    Icons.stop,
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.all(10.0),
+                  child: CircleAvatar(
+                    backgroundColor: stockfishStatusColor,
+                  ),
+                ),
+              ],
+            ),
+          ),
       ],
     );
   }
