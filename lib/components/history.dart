@@ -19,6 +19,40 @@
 import 'package:flutter/material.dart';
 import '../logic/history/history_builder.dart';
 
+class HistoryNavigationButton extends StatelessWidget {
+  final double size;
+  final IconData icon;
+  final void Function() onClick;
+
+  const HistoryNavigationButton({
+    super.key,
+    required this.icon,
+    required this.size,
+    required this.onClick,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final iconSize = size * 0.5;
+    final iconBackground = Theme.of(context).primaryColor;
+    return SizedBox(
+      width: size,
+      height: size,
+      child: IconButton(
+        iconSize: iconSize,
+        onPressed: onClick,
+        style: IconButton.styleFrom(
+          shape: const CircleBorder(),
+          backgroundColor: iconBackground,
+        ),
+        icon: Icon(
+          icon,
+        ),
+      ),
+    );
+  }
+}
+
 class ChessHistory extends StatelessWidget {
   final HistoryNode? historyTree;
   final List<Widget> children;
@@ -42,57 +76,54 @@ class ChessHistory extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: <Widget>[
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            ElevatedButton(
-              onPressed: requestGotoFirst,
-              style: ElevatedButton.styleFrom(
-                shape: const CircleBorder(),
-              ),
-              child: const Icon(Icons.first_page),
+    return LayoutBuilder(builder: (ctx2, constraints) {
+      final commonSize = constraints.maxWidth * 0.20;
+      return Expanded(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: <Widget>[
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                HistoryNavigationButton(
+                  size: commonSize,
+                  icon: Icons.first_page,
+                  onClick: requestGotoFirst,
+                ),
+                HistoryNavigationButton(
+                  size: commonSize,
+                  icon: Icons.arrow_back,
+                  onClick: requestGotoPrevious,
+                ),
+                HistoryNavigationButton(
+                  size: commonSize,
+                  icon: Icons.arrow_forward,
+                  onClick: requestGotoNext,
+                ),
+                HistoryNavigationButton(
+                  size: commonSize,
+                  icon: Icons.last_page,
+                  onClick: requestGotoLast,
+                ),
+              ],
             ),
-            ElevatedButton(
-              onPressed: requestGotoPrevious,
-              style: ElevatedButton.styleFrom(
-                shape: const CircleBorder(),
+            Expanded(
+              child: Container(
+                color: Colors.amber[300],
+                child: SingleChildScrollView(
+                  controller: scrollController,
+                  child: Wrap(
+                    spacing: 10,
+                    runSpacing: 6,
+                    children: children,
+                  ),
+                ),
               ),
-              child: const Icon(Icons.arrow_back),
-            ),
-            ElevatedButton(
-              onPressed: requestGotoNext,
-              style: ElevatedButton.styleFrom(
-                shape: const CircleBorder(),
-              ),
-              child: const Icon(Icons.arrow_forward),
-            ),
-            ElevatedButton(
-              onPressed: requestGotoLast,
-              style: ElevatedButton.styleFrom(
-                shape: const CircleBorder(),
-              ),
-              child: const Icon(Icons.last_page),
             ),
           ],
         ),
-        Expanded(
-          child: Container(
-            color: Colors.amber[300],
-            child: SingleChildScrollView(
-              controller: scrollController,
-              child: Wrap(
-                spacing: 10,
-                runSpacing: 6,
-                children: children,
-              ),
-            ),
-          ),
-        ),
-      ],
-    );
+      );
+    });
   }
 }

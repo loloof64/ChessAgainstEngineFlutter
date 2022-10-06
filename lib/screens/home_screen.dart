@@ -752,9 +752,13 @@ class _MyHomePageState extends State<MyHomePage> with WindowListener {
 
   @override
   Widget build(BuildContext context) {
+    final isLandscape =
+        MediaQuery.of(context).orientation == Orientation.landscape;
     return Scaffold(
       appBar: _buildAppBar(),
-      body: _buildBody(),
+      body: _buildBody(
+        isLandscape: isLandscape,
+      ),
     );
   }
 
@@ -830,57 +834,73 @@ class _MyHomePageState extends State<MyHomePage> with WindowListener {
     );
   }
 
-  Widget _buildBody() {
+  Widget _buildBody({required bool isLandscape}) {
+    const commonDiviserSize = 30.0;
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(16.0),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: <Widget>[
-            _buildChessBoardZone(),
-            const SizedBox(
-              width: 30,
-            ),
-            _buildInformationZone(),
-          ],
-        ),
+        child: isLandscape
+            ? Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: <Widget>[
+                  _buildChessBoardZone(),
+                  const SizedBox(
+                    width: commonDiviserSize,
+                  ),
+                  _buildInformationZone(),
+                ],
+              )
+            : Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: <Widget>[
+                  _buildChessBoardZone(),
+                  const SizedBox(
+                    height: commonDiviserSize,
+                  ),
+                  _buildInformationZone(),
+                ],
+              ),
       ),
     );
   }
 
   Widget _buildChessBoardZone() {
-    return SizedBox(
-      height: 600,
-      child: Stack(
-        children: [
-          SimpleChessBoard(
-              lastMoveToHighlight: _lastMoveArrow,
-              fen: _gameLogic.fen,
-              orientation: _orientation,
-              whitePlayerType: _whitePlayerType,
-              blackPlayerType: _blackPlayerType,
-              onMove: _tryMakingMove,
-              onPromote: _handlePromotion),
-          _engineThinking
-              ? const Center(
-                  child: SizedBox(
-                    width: 600,
-                    height: 600,
-                    child: CircularProgressIndicator(),
-                  ),
-                )
-              : const SizedBox(),
-        ],
-      ),
-    );
+    return LayoutBuilder(builder: (ctx2, constraints) {
+      final availableBoardSize = constraints.maxWidth < constraints.maxHeight
+          ? constraints.maxWidth
+          : constraints.maxHeight;
+      return SizedBox(
+        height: availableBoardSize,
+        child: Stack(
+          children: [
+            SimpleChessBoard(
+                lastMoveToHighlight: _lastMoveArrow,
+                fen: _gameLogic.fen,
+                orientation: _orientation,
+                whitePlayerType: _whitePlayerType,
+                blackPlayerType: _blackPlayerType,
+                onMove: _tryMakingMove,
+                onPromote: _handlePromotion),
+            _engineThinking
+                ? Center(
+                    child: SizedBox(
+                      width: availableBoardSize,
+                      height: availableBoardSize,
+                      child: const CircularProgressIndicator(),
+                    ),
+                  )
+                : const SizedBox(),
+          ],
+        ),
+      );
+    });
   }
 
   Widget _buildInformationZone() {
-    return SizedBox(
-      height: 500,
+    return Expanded(
       child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           _buildEvaluationZone(),
@@ -891,80 +911,75 @@ class _MyHomePageState extends State<MyHomePage> with WindowListener {
   }
 
   Widget _buildEvaluationZone() {
-    return Column(
-      children: [
-        _gameInProgress
-            ? Row(
-                children: [
-                  I18nText(
-                    'game.show_evaluation',
-                    child: const Text(
-                      '',
-                      style: TextStyle(fontSize: 40.0),
+    return LayoutBuilder(builder: (ctx2, constraints) {
+      final baseFontSize = constraints.maxWidth * 0.07;
+      return Column(
+        children: [
+          _gameInProgress
+              ? Row(
+                  children: [
+                    I18nText(
+                      'game.show_evaluation',
+                      child: Text(
+                        '',
+                        style: TextStyle(fontSize: baseFontSize),
+                      ),
                     ),
-                  ),
-                  Checkbox(
-                    value: _scoreVisible,
-                    onChanged: (newValue) {
-                      if (_gameInProgress) {
-                        setState(() {
-                          _scoreVisible = newValue ?? false;
-                        });
-                        if (_scoreVisible) {
-                          _startEngineEvaluation();
+                    Checkbox(
+                      value: _scoreVisible,
+                      onChanged: (newValue) {
+                        if (_gameInProgress) {
+                          setState(() {
+                            _scoreVisible = newValue ?? false;
+                          });
+                          if (_scoreVisible) {
+                            _startEngineEvaluation();
+                          }
                         }
-                      }
-                    },
-                  ),
-                ],
-              )
-            : const SizedBox(),
-        _scoreVisible
-            ? Text(
-                _score.toString(),
-                style: TextStyle(
-                  fontSize: 30.0,
-                  color: _score < 0
-                      ? Colors.red
-                      : _score > 0
-                          ? Colors.green
-                          : Colors.black,
+                      },
+                    ),
+                  ],
+                )
+              : const SizedBox(),
+          if (_scoreVisible)
+            Text(
+              _score.toString(),
+              style: TextStyle(
+                fontSize: baseFontSize * 0.9,
+                color: _score < 0
+                    ? Colors.red
+                    : _score > 0
+                        ? Colors.green
+                        : Colors.black,
+              ),
+            ),
+          if (_skillLevelEditable)
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                I18nText('game.engine_level'),
+                Slider(
+                  value: _skillLevel.toDouble(),
+                  min: _skillLevelMin.toDouble(),
+                  max: _skillLevelMax.toDouble(),
+                  onChanged: (newValue) {
+                    setState(() {
+                      _skillLevel = newValue.toInt();
+                      _stockfish.stdin =
+                          'setoption name Skill Level value $_skillLevel';
+                    });
+                  },
                 ),
-              )
-            : const SizedBox(),
-        _skillLevelEditable
-            ? Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  I18nText('game.engine_level'),
-                  Slider(
-                    value: _skillLevel.toDouble(),
-                    min: _skillLevelMin.toDouble(),
-                    max: _skillLevelMax.toDouble(),
-                    onChanged: (newValue) {
-                      setState(() {
-                        _skillLevel = newValue.toInt();
-                        _stockfish.stdin =
-                            'setoption name Skill Level value $_skillLevel';
-                      });
-                    },
-                  ),
-                  Text(_skillLevel.toString()),
-                ],
-              )
-            : const SizedBox(),
-      ],
-    );
+                Text(_skillLevel.toString()),
+              ],
+            ),
+        ],
+      );
+    });
   }
 
   Widget _buildHistoryZone() {
-    double historyHeight = _gameInProgress ? 570 : 620;
-    if (_skillLevelEditable) historyHeight -= 45;
-    if (_scoreVisible) historyHeight -= 40;
-
-    return SizedBox(
-      width: 500,
-      height: historyHeight,
+    return Expanded(
       child: ChessHistory(
         historyTree: _gameHistoryTree,
         scrollController: _historyScrollController,
