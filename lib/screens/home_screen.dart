@@ -34,7 +34,7 @@ class _MyHomePageState extends State<MyHomePage> with WindowListener {
   HistoryNode? _gameHistoryTree;
   HistoryNode? _currentGameHistoryNode;
   HistoryNode? _selectedHistoryNode;
-  List<Widget> _historyWidgetsTree = [];
+  List<HistoryElement> _historyElementsTree = [];
   bool _cpuCanPlay = false;
   String _startPosition = chess.Chess.DEFAULT_POSITION;
   bool _gameStart = false;
@@ -470,7 +470,7 @@ class _MyHomePageState extends State<MyHomePage> with WindowListener {
   void _updateHistoryChildrenWidgets() {
     setState(() {
       if (_gameHistoryTree != null) {
-        _historyWidgetsTree = recursivelyBuildWidgetsFromHistoryTree(
+        _historyElementsTree = recursivelyBuildElementsFromHistoryTree(
           fontSize: 40,
           selectedHistoryNode: _selectedHistoryNode,
           tree: _gameHistoryTree!,
@@ -979,6 +979,27 @@ class _MyHomePageState extends State<MyHomePage> with WindowListener {
   }
 
   Widget _buildHistoryZone() {
+    final historyWidgetsTree = _historyElementsTree.map((currentElement) {
+      final textComponent = Text(
+        currentElement.text,
+        style: TextStyle(
+          fontSize: currentElement.fontSize,
+          fontFamily: 'FreeSerif',
+          backgroundColor: currentElement.backgroundColor,
+          color: currentElement.textColor,
+        ),
+      );
+
+      if (currentElement is MoveLinkElement) {
+        return TextButton(
+          onPressed: currentElement.onPressed,
+          child: textComponent,
+        );
+      } else {
+        return textComponent;
+      }
+    }).toList();
+
     return Expanded(
       child: ChessHistory(
         historyTree: _gameHistoryTree,
@@ -987,7 +1008,7 @@ class _MyHomePageState extends State<MyHomePage> with WindowListener {
         requestGotoPrevious: _requestGotoPrevious,
         requestGotoNext: _requestGotoNext,
         requestGotoLast: _requestGotoLast,
-        children: _historyWidgetsTree,
+        children: historyWidgetsTree,
       ),
     );
   }

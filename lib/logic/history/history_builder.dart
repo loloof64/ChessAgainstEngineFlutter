@@ -143,6 +143,7 @@ class Move {
   int get hashCode => from.hashCode + (10000000000 * to.hashCode);
 }
 
+/// A node in a composite History Tree.
 class HistoryNode {
   HistoryNode? next;
   late List<HistoryNode> variations;
@@ -184,6 +185,52 @@ class HistoryNode {
 
   @override
   int get hashCode => fen.hashCode + (10000 * caption.hashCode);
+}
+
+/// An element describing an history element to be rendered.
+abstract class HistoryElement {
+  final double fontSize;
+  final String text;
+  final Color textColor;
+  final Color backgroundColor;
+
+  HistoryElement({
+    required this.text,
+    required this.fontSize,
+    required this.textColor,
+    required this.backgroundColor,
+  });
+}
+
+class NotInteractiveElement extends HistoryElement {
+  NotInteractiveElement({
+    required String text,
+    required double fontSize,
+    required Color textColor,
+    required Color backgroundColor,
+  }) : super(
+          text: text,
+          fontSize: fontSize,
+          textColor: textColor,
+          backgroundColor: backgroundColor,
+        );
+}
+
+class MoveLinkElement extends HistoryElement {
+  final void Function() onPressed;
+
+  MoveLinkElement({
+    required String text,
+    required double fontSize,
+    required Color textColor,
+    required Color backgroundColor,
+    required this.onPressed,
+  }) : super(
+          text: text,
+          fontSize: fontSize,
+          textColor: textColor,
+          backgroundColor: backgroundColor,
+        );
 }
 
 Future<HistoryNode?> buildHistoryTreeFromPgnTree(
@@ -254,7 +301,7 @@ HistoryNode _recursivelyBuildHistoryTreeFromPgnTree(
   return rootHistoryNode;
 }
 
-List<Widget> recursivelyBuildWidgetsFromHistoryTree({
+List<HistoryElement> recursivelyBuildElementsFromHistoryTree({
   required HistoryNode tree,
   HistoryNode? selectedHistoryNode,
   required double fontSize,
@@ -264,25 +311,16 @@ List<Widget> recursivelyBuildWidgetsFromHistoryTree({
   })
       onHistoryMoveRequested,
 }) {
-  final result = <Widget>[];
+  final result = <HistoryElement>[];
 
   HistoryNode? currentHistoryNode = tree;
 
-  do {
+  while (currentHistoryNode != null) {
     final backgroundColor = selectedHistoryNode == currentHistoryNode
         ? Colors.blueAccent
         : Colors.transparent;
     final textColor =
         selectedHistoryNode == currentHistoryNode ? Colors.white : Colors.black;
-    final textComponent = Text(
-      currentHistoryNode!.caption,
-      style: TextStyle(
-        fontSize: fontSize,
-        fontFamily: 'FreeSerif',
-        backgroundColor: backgroundColor,
-        color: textColor,
-      ),
-    );
     final relatedMove = currentHistoryNode.relatedMove != null
         ? Move.from(currentHistoryNode.relatedMove!)
         : null;
@@ -290,24 +328,40 @@ List<Widget> recursivelyBuildWidgetsFromHistoryTree({
 
     result.add(
       currentHistoryNode.fen == null
-          ? textComponent
-          : TextButton(
+          ? NotInteractiveElement(
+              text: currentHistoryNode.caption,
+              fontSize: fontSize,
+              textColor: textColor,
+              backgroundColor: backgroundColor,
+            )
+          : MoveLinkElement(
+              text: currentHistoryNode.caption,
+              fontSize: fontSize,
+              textColor: textColor,
+              backgroundColor: backgroundColor,
               onPressed: () {
                 onHistoryMoveRequested(
                   historyMove: relatedMove!,
                   selectedHistoryNode: nodeToRegister,
                 );
               },
-              child: textComponent),
+            ),
     );
 
     if (currentHistoryNode.result != null) {
-      result.add(Text(currentHistoryNode.result!));
+      result.add(
+        NotInteractiveElement(
+          text: currentHistoryNode.result!,
+          textColor: Colors.black,
+          backgroundColor: Colors.transparent,
+          fontSize: fontSize,
+        ),
+      );
     }
 
     if (currentHistoryNode.variations.isNotEmpty) {
       for (var currentVariation in currentHistoryNode.variations) {
-        final currentVariationResult = recursivelyBuildWidgetsFromHistoryTree(
+        final currentVariationResult = recursivelyBuildElementsFromHistoryTree(
           tree: currentVariation,
           fontSize: fontSize,
           onHistoryMoveRequested: onHistoryMoveRequested,
@@ -319,7 +373,7 @@ List<Widget> recursivelyBuildWidgetsFromHistoryTree({
     currentHistoryNode = currentHistoryNode.next != null
         ? HistoryNode.from(currentHistoryNode.next!)
         : null;
-  } while (currentHistoryNode != null);
+  }
 
   return result;
 }
