@@ -752,10 +752,78 @@ class _MyHomePageState extends State<MyHomePage> with WindowListener {
 
   @override
   Widget build(BuildContext context) {
+    Color stockfishStatusColor;
+
+    switch (_stockfish.state.value) {
+      case StockfishState.disposed:
+        stockfishStatusColor = Colors.black;
+        break;
+      case StockfishState.starting:
+        stockfishStatusColor = Colors.orange;
+        break;
+      case StockfishState.ready:
+        stockfishStatusColor = Colors.green;
+        break;
+      case StockfishState.error:
+        stockfishStatusColor = Colors.red;
+        break;
+    }
+
     final isLandscape =
         MediaQuery.of(context).orientation == Orientation.landscape;
     return Scaffold(
-      appBar: _buildAppBar(),
+      appBar: AppBar(
+        title: I18nText('app.title'),
+        actions: [
+          IconButton(
+            onPressed: _purposeRestartGame,
+            icon: const Icon(Icons.add),
+          ),
+          IconButton(
+            onPressed: _toggleBoardOrientation,
+            icon: const Icon(Icons.swap_vert),
+          ),
+          IconButton(
+            onPressed: _purposeStopGame,
+            icon: const Icon(Icons.pan_tool),
+          ),
+          IconButton(
+            onPressed: _accessSettings,
+            icon: const Icon(Icons.settings),
+          ),
+          if (!kReleaseMode)
+            DecoratedBox(
+              decoration: BoxDecoration(
+                border: Border.all(
+                  color: Colors.red,
+                  width: 5.0,
+                ),
+              ),
+              child: Row(
+                children: [
+                  IconButton(
+                    onPressed: _doStartStockfish,
+                    icon: const Icon(
+                      Icons.start,
+                    ),
+                  ),
+                  IconButton(
+                    onPressed: _stopStockfish,
+                    icon: const Icon(
+                      Icons.stop,
+                    ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.all(10.0),
+                    child: CircleAvatar(
+                      backgroundColor: stockfishStatusColor,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+        ],
+      ),
       body: HomePageBody(
         isLandscape: isLandscape,
         lastMoveToHighlight: _lastMoveArrow,
@@ -796,78 +864,6 @@ class _MyHomePageState extends State<MyHomePage> with WindowListener {
         onGotoNextRequest: _requestGotoNext,
         onGotoLastRequest: _requestGotoLast,
       ),
-    );
-  }
-
-  PreferredSizeWidget _buildAppBar() {
-    Color stockfishStatusColor;
-
-    switch (_stockfish.state.value) {
-      case StockfishState.disposed:
-        stockfishStatusColor = Colors.black;
-        break;
-      case StockfishState.starting:
-        stockfishStatusColor = Colors.orange;
-        break;
-      case StockfishState.ready:
-        stockfishStatusColor = Colors.green;
-        break;
-      case StockfishState.error:
-        stockfishStatusColor = Colors.red;
-        break;
-    }
-
-    return AppBar(
-      title: I18nText('app.title'),
-      actions: [
-        IconButton(
-          onPressed: _purposeRestartGame,
-          icon: const Icon(Icons.add),
-        ),
-        IconButton(
-          onPressed: _toggleBoardOrientation,
-          icon: const Icon(Icons.swap_vert),
-        ),
-        IconButton(
-          onPressed: _purposeStopGame,
-          icon: const Icon(Icons.pan_tool),
-        ),
-        IconButton(
-          onPressed: _accessSettings,
-          icon: const Icon(Icons.settings),
-        ),
-        if (!kReleaseMode)
-          DecoratedBox(
-            decoration: BoxDecoration(
-              border: Border.all(
-                color: Colors.red,
-                width: 5.0,
-              ),
-            ),
-            child: Row(
-              children: [
-                IconButton(
-                  onPressed: _doStartStockfish,
-                  icon: const Icon(
-                    Icons.start,
-                  ),
-                ),
-                IconButton(
-                  onPressed: _stopStockfish,
-                  icon: const Icon(
-                    Icons.stop,
-                  ),
-                ),
-                Padding(
-                  padding: const EdgeInsets.all(10.0),
-                  child: CircleAvatar(
-                    backgroundColor: stockfishStatusColor,
-                  ),
-                ),
-              ],
-            ),
-          ),
-      ],
     );
   }
 }
