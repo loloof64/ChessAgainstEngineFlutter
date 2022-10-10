@@ -756,8 +756,45 @@ class _MyHomePageState extends State<MyHomePage> with WindowListener {
         MediaQuery.of(context).orientation == Orientation.landscape;
     return Scaffold(
       appBar: _buildAppBar(),
-      body: _buildBody(
+      body: HomePageBody(
         isLandscape: isLandscape,
+        lastMoveToHighlight: _lastMoveArrow,
+        engineIsThinking: _engineThinking,
+        gameInProgress: _gameInProgress,
+        scoreVisible: _scoreVisible,
+        skillLevelEditable: _skillLevelEditable,
+        skillLevel: _skillLevel,
+        skillLevelMin: _skillLevelMin,
+        skillLevelMax: _skillLevelMax,
+        score: _score,
+        positionFen: _gameLogic.fen,
+        orientation: _orientation,
+        whitePlayerType: _whitePlayerType,
+        blackPlayerType: _blackPlayerType,
+        historyElementsTree: _historyElementsTree,
+        scrollController: _historyScrollController,
+        onMove: _tryMakingMove,
+        onPromote: _handlePromotion,
+        onScoreVisibleStatusChanged: (newValue) {
+          if (_gameInProgress) {
+            setState(() {
+              _scoreVisible = newValue ?? false;
+            });
+            if (_scoreVisible) {
+              _startEngineEvaluation();
+            }
+          }
+        },
+        onSkillLevelChanged: (newValue) {
+          setState(() {
+            _skillLevel = newValue.toInt();
+            _stockfish.stdin = 'setoption name Skill Level value $_skillLevel';
+          });
+        },
+        onGotoFirstRequest: _requestGotoFirst,
+        onGotoPreviousRequest: _requestGotoPrevious,
+        onGotoNextRequest: _requestGotoNext,
+        onGotoLastRequest: _requestGotoLast,
       ),
     );
   }
@@ -833,8 +870,64 @@ class _MyHomePageState extends State<MyHomePage> with WindowListener {
       ],
     );
   }
+}
 
-  Widget _buildBody({required bool isLandscape}) {
+class HomePageBody extends StatelessWidget {
+  final bool isLandscape;
+  final bool engineIsThinking;
+  final bool gameInProgress;
+  final bool scoreVisible;
+  final bool skillLevelEditable;
+  final int skillLevel;
+  final int skillLevelMin;
+  final int skillLevelMax;
+  final double score;
+  final String positionFen;
+  final BoardArrow? lastMoveToHighlight;
+  final BoardColor orientation;
+  final PlayerType whitePlayerType;
+  final PlayerType blackPlayerType;
+  final List<HistoryElement> historyElementsTree;
+  final ScrollController scrollController;
+  final void Function({required ShortMove move}) onMove;
+  final Future<PieceType?> Function() onPromote;
+  final void Function(bool? newValue) onScoreVisibleStatusChanged;
+  final void Function(double newValue) onSkillLevelChanged;
+  final void Function() onGotoFirstRequest;
+  final void Function() onGotoPreviousRequest;
+  final void Function() onGotoNextRequest;
+  final void Function() onGotoLastRequest;
+
+  const HomePageBody({
+    super.key,
+    this.lastMoveToHighlight,
+    required this.isLandscape,
+    required this.engineIsThinking,
+    required this.gameInProgress,
+    required this.scoreVisible,
+    required this.skillLevelEditable,
+    required this.skillLevel,
+    required this.skillLevelMin,
+    required this.skillLevelMax,
+    required this.score,
+    required this.positionFen,
+    required this.orientation,
+    required this.whitePlayerType,
+    required this.blackPlayerType,
+    required this.historyElementsTree,
+    required this.scrollController,
+    required this.onMove,
+    required this.onPromote,
+    required this.onScoreVisibleStatusChanged,
+    required this.onSkillLevelChanged,
+    required this.onGotoFirstRequest,
+    required this.onGotoPreviousRequest,
+    required this.onGotoNextRequest,
+    required this.onGotoLastRequest,
+  });
+
+  @override
+  Widget build(BuildContext context) {
     const commonDiviserSize = 30.0;
     return Center(
       child: Padding(
@@ -844,29 +937,101 @@ class _MyHomePageState extends State<MyHomePage> with WindowListener {
                 mainAxisAlignment: MainAxisAlignment.center,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: <Widget>[
-                  _buildChessBoardZone(),
+                  HomePageChessboardZone(
+                    engineIsThinking: engineIsThinking,
+                    positionFen: positionFen,
+                    orientation: orientation,
+                    whitePlayerType: whitePlayerType,
+                    blackPlayerType: blackPlayerType,
+                    onMove: onMove,
+                    onPromote: onPromote,
+                  ),
                   const SizedBox(
                     width: commonDiviserSize,
                   ),
-                  _buildInformationZone(),
+                  HomePageInformationZone(
+                    gameInProgress: gameInProgress,
+                    scoreVisible: scoreVisible,
+                    skillLevelEditable: skillLevelEditable,
+                    skillLevel: skillLevel,
+                    skillLevelMin: skillLevelMin,
+                    skillLevelMax: skillLevelMax,
+                    score: score,
+                    historyElementsTree: historyElementsTree,
+                    scrollController: scrollController,
+                    onScoreVisibleStatusChanged: onScoreVisibleStatusChanged,
+                    onSkillLevelChanged: onSkillLevelChanged,
+                    onGotoFirstRequest: onGotoFirstRequest,
+                    onGotoPreviousRequest: onGotoPreviousRequest,
+                    onGotoNextRequest: onGotoNextRequest,
+                    onGotoLastRequest: onGotoLastRequest,
+                  ),
                 ],
               )
             : Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: <Widget>[
-                  _buildChessBoardZone(),
+                  HomePageChessboardZone(
+                    engineIsThinking: engineIsThinking,
+                    positionFen: positionFen,
+                    orientation: orientation,
+                    whitePlayerType: whitePlayerType,
+                    blackPlayerType: blackPlayerType,
+                    onMove: onMove,
+                    onPromote: onPromote,
+                  ),
                   const SizedBox(
                     height: commonDiviserSize,
                   ),
-                  _buildInformationZone(),
+                  HomePageInformationZone(
+                    gameInProgress: gameInProgress,
+                    scoreVisible: scoreVisible,
+                    skillLevelEditable: skillLevelEditable,
+                    skillLevel: skillLevel,
+                    skillLevelMin: skillLevelMin,
+                    skillLevelMax: skillLevelMax,
+                    score: score,
+                    historyElementsTree: historyElementsTree,
+                    scrollController: scrollController,
+                    onScoreVisibleStatusChanged: onScoreVisibleStatusChanged,
+                    onSkillLevelChanged: onSkillLevelChanged,
+                    onGotoFirstRequest: onGotoFirstRequest,
+                    onGotoPreviousRequest: onGotoPreviousRequest,
+                    onGotoNextRequest: onGotoNextRequest,
+                    onGotoLastRequest: onGotoLastRequest,
+                  ),
                 ],
               ),
       ),
     );
   }
+}
 
-  Widget _buildChessBoardZone() {
+class HomePageChessboardZone extends StatelessWidget {
+  final bool engineIsThinking;
+  final String positionFen;
+  final BoardArrow? lastMoveToHighlight;
+  final BoardColor orientation;
+  final PlayerType whitePlayerType;
+  final PlayerType blackPlayerType;
+  final void Function({required ShortMove move}) onMove;
+  final Future<PieceType?> Function() onPromote;
+
+  const HomePageChessboardZone({
+    super.key,
+    this.lastMoveToHighlight,
+    required this.engineIsThinking,
+    required this.positionFen,
+    required this.orientation,
+    required this.whitePlayerType,
+    required this.blackPlayerType,
+    required this.onMove,
+    required this.onPromote,
+  });
+
+  @override
+  Widget build(BuildContext context) {
     return LayoutBuilder(builder: (ctx2, constraints) {
       final availableBoardSize = constraints.maxWidth < constraints.maxHeight
           ? constraints.maxWidth
@@ -876,46 +1041,127 @@ class _MyHomePageState extends State<MyHomePage> with WindowListener {
         child: Stack(
           children: [
             SimpleChessBoard(
-                lastMoveToHighlight: _lastMoveArrow,
-                fen: _gameLogic.fen,
-                orientation: _orientation,
-                whitePlayerType: _whitePlayerType,
-                blackPlayerType: _blackPlayerType,
-                onMove: _tryMakingMove,
-                onPromote: _handlePromotion),
-            _engineThinking
-                ? Center(
-                    child: SizedBox(
-                      width: availableBoardSize,
-                      height: availableBoardSize,
-                      child: const CircularProgressIndicator(),
-                    ),
-                  )
-                : const SizedBox(),
+                lastMoveToHighlight: lastMoveToHighlight,
+                fen: positionFen,
+                orientation: orientation,
+                whitePlayerType: whitePlayerType,
+                blackPlayerType: blackPlayerType,
+                onMove: onMove,
+                onPromote: onPromote),
+            if (engineIsThinking)
+              Center(
+                child: SizedBox(
+                  width: availableBoardSize,
+                  height: availableBoardSize,
+                  child: const CircularProgressIndicator(),
+                ),
+              ),
           ],
         ),
       );
     });
   }
+}
 
-  Widget _buildInformationZone() {
+class HomePageInformationZone extends StatelessWidget {
+  final bool gameInProgress;
+  final bool scoreVisible;
+  final bool skillLevelEditable;
+  final int skillLevel;
+  final int skillLevelMin;
+  final int skillLevelMax;
+  final double score;
+  final List<HistoryElement> historyElementsTree;
+  final ScrollController scrollController;
+
+  final void Function(bool? newValue) onScoreVisibleStatusChanged;
+  final void Function(double newValue) onSkillLevelChanged;
+  final void Function() onGotoFirstRequest;
+  final void Function() onGotoPreviousRequest;
+  final void Function() onGotoNextRequest;
+  final void Function() onGotoLastRequest;
+
+  const HomePageInformationZone({
+    super.key,
+    required this.gameInProgress,
+    required this.scoreVisible,
+    required this.skillLevelEditable,
+    required this.skillLevel,
+    required this.skillLevelMin,
+    required this.skillLevelMax,
+    required this.score,
+    required this.historyElementsTree,
+    required this.scrollController,
+    required this.onScoreVisibleStatusChanged,
+    required this.onSkillLevelChanged,
+    required this.onGotoFirstRequest,
+    required this.onGotoPreviousRequest,
+    required this.onGotoNextRequest,
+    required this.onGotoLastRequest,
+  });
+
+  @override
+  Widget build(BuildContext context) {
     return Expanded(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          _buildEvaluationZone(),
-          _buildHistoryZone(),
+          HomePageEvaluationZone(
+            gameInProgress: gameInProgress,
+            scoreVisible: scoreVisible,
+            skillLevelEditable: skillLevelEditable,
+            score: score,
+            skillLevel: skillLevel,
+            skillLevelMin: skillLevelMin,
+            skillLevelMax: skillLevelMax,
+            onScoreVisibleStatusChanged: onScoreVisibleStatusChanged,
+            onSkillLevelChanged: onSkillLevelChanged,
+          ),
+          HomePageHistoryZone(
+            historyElementsTree: historyElementsTree,
+            scrollController: scrollController,
+            onGotoFirstRequest: onGotoFirstRequest,
+            onGotoPreviousRequest: onGotoPreviousRequest,
+            onGotoNextRequest: onGotoNextRequest,
+            onGotoLastRequest: onGotoLastRequest,
+          ),
         ],
       ),
     );
   }
+}
 
-  Widget _buildEvaluationZone() {
+class HomePageEvaluationZone extends StatelessWidget {
+  final bool gameInProgress;
+  final bool scoreVisible;
+  final bool skillLevelEditable;
+  final int skillLevel;
+  final int skillLevelMin;
+  final int skillLevelMax;
+  final double score;
+  final void Function(bool? newValue) onScoreVisibleStatusChanged;
+  final void Function(double newValue) onSkillLevelChanged;
+
+  const HomePageEvaluationZone({
+    super.key,
+    required this.gameInProgress,
+    required this.scoreVisible,
+    required this.skillLevelEditable,
+    required this.score,
+    required this.skillLevel,
+    required this.skillLevelMin,
+    required this.skillLevelMax,
+    required this.onScoreVisibleStatusChanged,
+    required this.onSkillLevelChanged,
+  });
+
+  @override
+  Widget build(BuildContext context) {
     return LayoutBuilder(builder: (ctx2, constraints) {
       final baseFontSize = constraints.maxWidth * 0.07;
       return Column(
         children: [
-          _gameInProgress
+          gameInProgress
               ? Row(
                   children: [
                     I18nText(
@@ -926,60 +1172,85 @@ class _MyHomePageState extends State<MyHomePage> with WindowListener {
                       ),
                     ),
                     Checkbox(
-                      value: _scoreVisible,
-                      onChanged: (newValue) {
-                        if (_gameInProgress) {
+                      value: scoreVisible,
+                      onChanged: onScoreVisibleStatusChanged,
+                      /* 
+                      (newValue) {
+                        if (gameInProgress) {
                           setState(() {
                             _scoreVisible = newValue ?? false;
                           });
-                          if (_scoreVisible) {
+                          if (scoreVisible) {
                             _startEngineEvaluation();
                           }
                         }
                       },
+                      */
                     ),
                   ],
                 )
               : const SizedBox(),
-          if (_scoreVisible)
+          if (scoreVisible)
             Text(
-              _score.toString(),
+              score.toString(),
               style: TextStyle(
                 fontSize: baseFontSize * 0.9,
-                color: _score < 0
+                color: score < 0
                     ? Colors.red
-                    : _score > 0
+                    : score > 0
                         ? Colors.green
                         : Colors.black,
               ),
             ),
-          if (_skillLevelEditable)
+          if (skillLevelEditable)
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 I18nText('game.engine_level'),
                 Slider(
-                  value: _skillLevel.toDouble(),
-                  min: _skillLevelMin.toDouble(),
-                  max: _skillLevelMax.toDouble(),
-                  onChanged: (newValue) {
+                  value: skillLevel.toDouble(),
+                  min: skillLevelMin.toDouble(),
+                  max: skillLevelMax.toDouble(),
+                  onChanged: onSkillLevelChanged,
+                  /* (newValue) {
                     setState(() {
                       _skillLevel = newValue.toInt();
                       _stockfish.stdin =
                           'setoption name Skill Level value $_skillLevel';
                     });
                   },
+                  */
                 ),
-                Text(_skillLevel.toString()),
+                Text(skillLevel.toString()),
               ],
             ),
         ],
       );
     });
   }
+}
 
-  Widget _buildHistoryZone() {
-    final historyWidgetsTree = _historyElementsTree.map((currentElement) {
+class HomePageHistoryZone extends StatelessWidget {
+  final List<HistoryElement> historyElementsTree;
+  final ScrollController scrollController;
+  final void Function() onGotoFirstRequest;
+  final void Function() onGotoPreviousRequest;
+  final void Function() onGotoNextRequest;
+  final void Function() onGotoLastRequest;
+
+  const HomePageHistoryZone({
+    super.key,
+    required this.historyElementsTree,
+    required this.scrollController,
+    required this.onGotoFirstRequest,
+    required this.onGotoPreviousRequest,
+    required this.onGotoNextRequest,
+    required this.onGotoLastRequest,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final historyWidgetsTree = historyElementsTree.map((currentElement) {
       final textComponent = Text(
         currentElement.text,
         style: TextStyle(
@@ -1002,12 +1273,11 @@ class _MyHomePageState extends State<MyHomePage> with WindowListener {
 
     return Expanded(
       child: ChessHistory(
-        historyTree: _gameHistoryTree,
-        scrollController: _historyScrollController,
-        requestGotoFirst: _requestGotoFirst,
-        requestGotoPrevious: _requestGotoPrevious,
-        requestGotoNext: _requestGotoNext,
-        requestGotoLast: _requestGotoLast,
+        scrollController: scrollController,
+        requestGotoFirst: onGotoFirstRequest,
+        requestGotoPrevious: onGotoPreviousRequest,
+        requestGotoNext: onGotoNextRequest,
+        requestGotoLast: onGotoLastRequest,
         children: historyWidgetsTree,
       ),
     );

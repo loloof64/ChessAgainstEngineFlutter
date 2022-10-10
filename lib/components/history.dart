@@ -17,7 +17,6 @@
 */
 
 import 'package:flutter/material.dart';
-import '../logic/history/history_builder.dart';
 
 class HistoryNavigationButton extends StatelessWidget {
   final double size;
@@ -54,7 +53,6 @@ class HistoryNavigationButton extends StatelessWidget {
 }
 
 class ChessHistory extends StatelessWidget {
-  final HistoryNode? historyTree;
   final List<Widget> children;
   final ScrollController scrollController;
 
@@ -65,7 +63,6 @@ class ChessHistory extends StatelessWidget {
 
   const ChessHistory({
     Key? key,
-    required this.historyTree,
     required this.children,
     required this.scrollController,
     required this.requestGotoFirst,
@@ -78,51 +75,49 @@ class ChessHistory extends StatelessWidget {
   Widget build(BuildContext context) {
     return LayoutBuilder(builder: (ctx2, constraints) {
       final commonSize = constraints.maxWidth * 0.20;
-      return Expanded(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: <Widget>[
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                HistoryNavigationButton(
-                  size: commonSize,
-                  icon: Icons.first_page,
-                  onClick: requestGotoFirst,
-                ),
-                HistoryNavigationButton(
-                  size: commonSize,
-                  icon: Icons.arrow_back,
-                  onClick: requestGotoPrevious,
-                ),
-                HistoryNavigationButton(
-                  size: commonSize,
-                  icon: Icons.arrow_forward,
-                  onClick: requestGotoNext,
-                ),
-                HistoryNavigationButton(
-                  size: commonSize,
-                  icon: Icons.last_page,
-                  onClick: requestGotoLast,
-                ),
-              ],
-            ),
-            Expanded(
-              child: Container(
-                color: Colors.amber[300],
-                child: SingleChildScrollView(
-                  controller: scrollController,
-                  child: Wrap(
-                    spacing: 10,
-                    runSpacing: 6,
-                    children: children,
-                  ),
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: <Widget>[
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              HistoryNavigationButton(
+                size: commonSize,
+                icon: Icons.first_page,
+                onClick: requestGotoFirst,
+              ),
+              HistoryNavigationButton(
+                size: commonSize,
+                icon: Icons.arrow_back,
+                onClick: requestGotoPrevious,
+              ),
+              HistoryNavigationButton(
+                size: commonSize,
+                icon: Icons.arrow_forward,
+                onClick: requestGotoNext,
+              ),
+              HistoryNavigationButton(
+                size: commonSize,
+                icon: Icons.last_page,
+                onClick: requestGotoLast,
+              ),
+            ],
+          ),
+          Expanded(
+            child: Container(
+              color: Colors.amber[300],
+              child: SingleChildScrollView(
+                controller: scrollController,
+                child: Wrap(
+                  spacing: 10,
+                  runSpacing: 6,
+                  children: children,
                 ),
               ),
             ),
-          ],
-        ),
+          ),
+        ],
       );
     });
   }
