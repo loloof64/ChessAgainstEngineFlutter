@@ -1,9 +1,9 @@
 import 'dart:async';
 
+import 'package:chess_against_engine/logic/stockfish/stockfish_manager.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 
-import 'package:stockfish_chess_engine/stockfish.dart';
 import 'package:stockfish_chess_engine/stockfish_state.dart';
 import 'package:window_manager/window_manager.dart';
 import 'package:simple_chess_board/models/board_arrow.dart';
@@ -41,7 +41,6 @@ class _MyHomePageState extends State<MyHomePage> with WindowListener {
   bool _gameInProgress = false;
   bool _skillLevelEditable = false;
   int _skillLevel = -1;
-  int _skillLevelDefault = -1;
   int _skillLevelMin = -1;
   int _skillLevelMax = -1;
   bool _engineThinking = false;
@@ -51,41 +50,55 @@ class _MyHomePageState extends State<MyHomePage> with WindowListener {
       ScrollController(initialScrollOffset: 0.0, keepScrollOffset: true);
   BoardArrow? _lastMoveArrow;
   late SharedPreferences _prefs;
-  late Stockfish _stockfish;
-  late StreamSubscription<String> _stockfishOutputSubsciption;
+
+  late StockfishManager _stockfishManager;
 
   @override
   void initState() {
     windowManager.addListener(this);
     _overrideDefaultCloseHandler();
+    _stockfishManager = StockfishManager(
+      setSkillLevelOption: _setSkillLevelOption,
+      unsetSkillLevelOption: _unsetSkillLevelOption,
+      handleReadyOk: _makeComputerMove,
+      handleScoreCp: _handleScoreCp,
+      onBestMove: _processBestMove,
+    );
     _doStartStockfish();
     _gameLogic.load(emptyPosition);
     _initPreferences();
     super.initState();
   }
 
-  void _doStartStockfish() async {
-    _stockfish = Stockfish();
-    _stockfishOutputSubsciption = _stockfish.stdout.listen((message) {
-      _processEngineStdOut(message);
+  void _setSkillLevelOption({
+    required int defaultLevel,
+    required int minLevel,
+    required int maxLevel,
+  }) {
+    setState(() {
+      _skillLevelMin = minLevel;
+      _skillLevelMax = maxLevel;
+      _skillLevel = defaultLevel;
+      _skillLevelEditable = true;
     });
-    await Future.delayed(const Duration(milliseconds: 800));
-    _stockfish.stdin = 'uci';
-    await Future.delayed(const Duration(milliseconds: 200));
-    _stockfish.stdin = 'isready';
-    await Future.delayed(const Duration(milliseconds: 50));
-    setState(() {});
+  }
+
+  void _unsetSkillLevelOption() {
+    setState(() {
+      _skillLevelEditable = false;
+    });
+  }
+
+  void _doStartStockfish() async {
+    setState(() {
+      _stockfishManager.start();
+    });
   }
 
   void _stopStockfish() async {
-    if (_stockfish.state.value == StockfishState.disposed ||
-        _stockfish.state.value == StockfishState.error) {
-      return;
-    }
-    _stockfishOutputSubsciption.cancel();
-    _stockfish.stdin = 'quit';
-    await Future.delayed(const Duration(milliseconds: 200));
-    setState(() {});
+    setState(() {
+      _stockfishManager.stop();
+    });
   }
 
   @override
@@ -101,17 +114,13 @@ class _MyHomePageState extends State<MyHomePage> with WindowListener {
     await windowManager.destroy();
   }
 
-  void _processEngineBestMoveMessage(String message) {
+  void _processBestMove({
+    required String from,
+    required String to,
+    required String? promotion,
+  }) {
+    if (!_cpuCanPlay) return;
     if (!_gameInProgress) return;
-    final bestMoveIndex = message.indexOf("bestmove");
-    final bestMoveMessage = message.substring(bestMoveIndex);
-    final parts = bestMoveMessage.split(" ");
-    final moveAlgebraic = parts[1];
-    final from = moveAlgebraic.substring(0, 2);
-    final to = moveAlgebraic.substring(2, 4);
-    final promotion =
-        moveAlgebraic.length > 4 ? moveAlgebraic.substring(4, 5) : null;
-
     final moveHasBeenMade =
         _gameLogic.move({'from': from, 'to': to, 'promotion': promotion});
 
@@ -163,60 +172,6 @@ class _MyHomePageState extends State<MyHomePage> with WindowListener {
     _makeComputerMove();
   }
 
-  void _processEngineStdOut(String message) {
-    if (message.contains("option")) {
-      final skillLevelPart = RegExp(
-              r'option name Skill Level type spin default (\d+) min (\d+) max (\d+)')
-          .firstMatch(message);
-      if (skillLevelPart != null) {
-        final defaultLevel = int.parse(skillLevelPart.group(1)!);
-        final minLevel = int.parse(skillLevelPart.group(2)!);
-        final maxLevel = int.parse(skillLevelPart.group(3)!);
-
-        setState(() {
-          _skillLevelEditable = true;
-          _skillLevelDefault = defaultLevel;
-          _skillLevelMin = minLevel;
-          _skillLevelMax = maxLevel;
-          _skillLevel = _skillLevelDefault;
-        });
-      } else {
-        setState(() {
-          _skillLevelEditable = false;
-        });
-      }
-    }
-    if (message.contains("uciok")) {
-      _stockfish.stdin = 'isready';
-      return;
-    }
-    if (message.contains("readyok")) {
-      _makeComputerMove();
-      return;
-    }
-    if (message.contains("score cp")) {
-      final cpuHasBlack = _whitePlayerType == PlayerType.human &&
-          _blackPlayerType == PlayerType.computer;
-      final cpuTurnAsBlack = cpuHasBlack && _cpuCanPlay;
-      final scores = RegExp(r"score cp ([0-9-]+)")
-          .allMatches(message)
-          .map((e) => e.group(1))
-          .map((e) => int.parse(e!) / 100.0);
-      for (var score in scores) {
-        var realScore = score;
-        if (cpuTurnAsBlack) {
-          realScore *= -1;
-        }
-        setState(() {
-          _score = realScore;
-        });
-      }
-    }
-    if (message.contains("bestmove") && _cpuCanPlay) {
-      _processEngineBestMoveMessage(message);
-    }
-  }
-
   Future<void> _initPreferences() async {
     _prefs = await SharedPreferences.getInstance();
   }
@@ -232,8 +187,24 @@ class _MyHomePageState extends State<MyHomePage> with WindowListener {
     setState(() {
       _engineThinking = true;
       _cpuCanPlay = true;
+      _stockfishManager.startEvaluation(
+        positionFen: _gameLogic.fen,
+        thinkingTimeMs: _prefs.getDouble('engineThinkingTime') ?? 1000.0,
+      );
     });
-    _startEngineEvaluation();
+  }
+
+  void _handleScoreCp({required double scoreCp}) {
+    final cpuHasBlack = _whitePlayerType == PlayerType.human &&
+        _blackPlayerType == PlayerType.computer;
+    final cpuTurnAsBlack = cpuHasBlack && _cpuCanPlay;
+    var realScore = scoreCp;
+    if (cpuTurnAsBlack) {
+      realScore *= -1;
+    }
+    setState(() {
+      _score = realScore;
+    });
   }
 
   /*
@@ -369,13 +340,6 @@ class _MyHomePageState extends State<MyHomePage> with WindowListener {
     setState(() {});
   }
 
-  Future<void> _startEngineEvaluation() async {
-    await Future.delayed(const Duration(seconds: 1));
-    _stockfish.stdin = "position fen ${_gameLogic.fen}";
-    _stockfish.stdin =
-        "go movetime ${_prefs.getDouble('engineThinkingTime') ?? 1000.0}";
-  }
-
   Future<void> _startNewGame({
     String startPosition = chess.Chess.DEFAULT_POSITION,
     bool playerHasWhite = true,
@@ -407,7 +371,12 @@ class _MyHomePageState extends State<MyHomePage> with WindowListener {
       _currentGameHistoryNode = _gameHistoryTree;
     });
     _updateHistoryChildrenWidgets();
-    _startEngineEvaluation();
+    setState(() {
+      _stockfishManager.startEvaluation(
+        positionFen: _gameLogic.fen,
+        thinkingTimeMs: _prefs.getDouble('engineThinkingTime') ?? 1000.0,
+      );
+    });
     _makeComputerMove();
   }
 
@@ -754,7 +723,7 @@ class _MyHomePageState extends State<MyHomePage> with WindowListener {
   Widget build(BuildContext context) {
     Color stockfishStatusColor;
 
-    switch (_stockfish.state.value) {
+    switch (_stockfishManager.state) {
       case StockfishState.disposed:
         stockfishStatusColor = Colors.black;
         break;
@@ -849,14 +818,18 @@ class _MyHomePageState extends State<MyHomePage> with WindowListener {
               _scoreVisible = newValue ?? false;
             });
             if (_scoreVisible) {
-              _startEngineEvaluation();
+              _stockfishManager.startEvaluation(
+                positionFen: _gameLogic.fen,
+                thinkingTimeMs:
+                    _prefs.getDouble('engineThinkingTime') ?? 1000.0,
+              );
             }
           }
         },
         onSkillLevelChanged: (newValue) {
           setState(() {
             _skillLevel = newValue.toInt();
-            _stockfish.stdin = 'setoption name Skill Level value $_skillLevel';
+            _stockfishManager.setSkillLevel(level: _skillLevel);
           });
         },
         onGotoFirstRequest: _requestGotoFirst,
