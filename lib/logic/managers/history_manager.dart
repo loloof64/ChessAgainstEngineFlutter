@@ -65,6 +65,7 @@ class HistoryManager {
       _currentGameHistoryNode?.next = nextHistoryNode;
       _currentGameHistoryNode = nextHistoryNode;
       updateChildrenWidgets();
+      //todo add board arrow
     }
   }
 

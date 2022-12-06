@@ -148,7 +148,6 @@ class _MyHomePageState extends State<MyHomePage> with WindowListener {
       final gameResultString = _getGameResultString();
 
       setState(() {
-        _addMoveToHistory();
         _historyManager.addResultString(gameResultString);
         _whitePlayerType = PlayerType.computer;
         _blackPlayerType = PlayerType.computer;
@@ -236,6 +235,10 @@ class _MyHomePageState extends State<MyHomePage> with WindowListener {
       );
 
       setState(() {
+        _lastMoveArrow = BoardArrow(
+            from: relatedMove.from.toString(),
+            to: relatedMove.to.toString(),
+            color: Colors.blueAccent);
         _historyManager.addMove(
           isWhiteTurnNow: whiteMove,
           isGameStart: _gameStart,
