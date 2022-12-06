@@ -152,6 +152,7 @@ class _MyHomePageState extends State<MyHomePage> with WindowListener {
         _whitePlayerType = PlayerType.computer;
         _blackPlayerType = PlayerType.computer;
         _gameInProgress = false;
+        _historyManager.gotoLast();
       });
 
       ScaffoldMessenger.of(context).showSnackBar(
