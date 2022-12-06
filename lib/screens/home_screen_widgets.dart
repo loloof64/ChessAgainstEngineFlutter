@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_i18n/flutter_i18n.dart';
 import 'package:simple_chess_board/simple_chess_board.dart';
 import 'package:simple_chess_board/models/board_arrow.dart';
-import '../logic/history/history_builder.dart';
+import '../logic/history_builder.dart';
 import '../components/history.dart';
 
 class HomePageBody extends StatelessWidget {
@@ -33,7 +33,7 @@ class HomePageBody extends StatelessWidget {
 
   const HomePageBody({
     super.key,
-    this.lastMoveToHighlight,
+    required this.lastMoveToHighlight,
     required this.isLandscape,
     required this.engineIsThinking,
     required this.gameInProgress,

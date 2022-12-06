@@ -1,21 +1,23 @@
 import 'dart:async';
 
-import 'package:chess_against_engine/logic/stockfish/stockfish_manager.dart';
-import 'package:flutter/material.dart';
-import 'package:flutter/foundation.dart';
-
-import 'package:stockfish_chess_engine/stockfish_state.dart';
-import 'package:window_manager/window_manager.dart';
-import 'package:simple_chess_board/models/board_arrow.dart';
-import 'package:simple_chess_board/simple_chess_board.dart';
+import 'package:chess_against_engine/logic/managers/history_manager.dart';
+import 'package:chess_against_engine/logic/managers/stockfish_manager.dart';
+import 'package:chess/chess.dart' as chess;
 import 'package:chess_vectors_flutter/chess_vectors_flutter.dart';
-import 'package:chess_loloof64/chess_loloof64.dart' as chess;
+import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_i18n/flutter_i18n.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:simple_chess_board/models/board_arrow.dart';
+import 'package:simple_chess_board/simple_chess_board.dart';
+import 'package:stockfish_chess_engine/stockfish_state.dart';
+import 'package:window_manager/window_manager.dart';
+
 import '../components/dialog_buttons.dart';
-import '../logic/history/history_builder.dart' hide File;
-import '../screens/new_game_screen.dart';
+import '../logic/history_builder.dart' hide File;
+import '../logic/utils.dart';
 import '../screens/home_screen_widgets.dart';
+import '../screens/new_game_screen.dart';
 
 const emptyPosition = '8/8/8/8/8/8/8/8 w - - 0 1';
 
@@ -31,10 +33,6 @@ class _MyHomePageState extends State<MyHomePage> with WindowListener {
   BoardColor _orientation = BoardColor.white;
   PlayerType _whitePlayerType = PlayerType.computer;
   PlayerType _blackPlayerType = PlayerType.computer;
-  HistoryNode? _gameHistoryTree;
-  HistoryNode? _currentGameHistoryNode;
-  HistoryNode? _selectedHistoryNode;
-  List<HistoryElement> _historyElementsTree = [];
   bool _cpuCanPlay = false;
   String _startPosition = chess.Chess.DEFAULT_POSITION;
   bool _gameStart = false;
@@ -46,12 +44,14 @@ class _MyHomePageState extends State<MyHomePage> with WindowListener {
   bool _engineThinking = false;
   bool _scoreVisible = false;
   double _score = 0.0;
+
   final ScrollController _historyScrollController =
       ScrollController(initialScrollOffset: 0.0, keepScrollOffset: true);
   BoardArrow? _lastMoveArrow;
   late SharedPreferences _prefs;
 
   late StockfishManager _stockfishManager;
+  late HistoryManager _historyManager;
 
   @override
   void initState() {
@@ -64,10 +64,20 @@ class _MyHomePageState extends State<MyHomePage> with WindowListener {
       handleScoreCp: _handleScoreCp,
       onBestMove: _processBestMove,
     );
+    _historyManager = HistoryManager(
+      onUpdateChildrenWidgets: _updateHistoryChildrenWidgets,
+      onPositionSelected: _selectPosition,
+      onSelectStartPosition: _selectStartPosition,
+      isStartMoveNumber: _isStartMoveNumber,
+    );
     _doStartStockfish();
     _gameLogic.load(emptyPosition);
     _initPreferences();
     super.initState();
+  }
+
+  bool _isStartMoveNumber(int moveNumber) {
+    return int.parse(_startPosition.split(' ')[5]) == moveNumber;
   }
 
   void _setSkillLevelOption({
@@ -136,21 +146,10 @@ class _MyHomePageState extends State<MyHomePage> with WindowListener {
 
     if (_gameLogic.game_over) {
       final gameResultString = _getGameResultString();
-      final nextHistoryNode = HistoryNode(caption: gameResultString);
 
       setState(() {
-        _selectedHistoryNode = _currentGameHistoryNode;
-        _lastMoveArrow = BoardArrow(
-          from: _currentGameHistoryNode!.relatedMove!.from.toString(),
-          to: _currentGameHistoryNode!.relatedMove!.to.toString(),
-          color: Colors.blueAccent,
-        );
-        _currentGameHistoryNode?.next = nextHistoryNode;
-        _currentGameHistoryNode = nextHistoryNode;
-      });
-      _updateHistoryChildrenWidgets();
-
-      setState(() {
+        _addMoveToHistory();
+        _historyManager.addResultString(gameResultString);
         _whitePlayerType = PlayerType.computer;
         _blackPlayerType = PlayerType.computer;
         _gameInProgress = false;
@@ -168,7 +167,9 @@ class _MyHomePageState extends State<MyHomePage> with WindowListener {
       );
     }
 
-    _updateHistoryChildrenWidgets();
+    setState(() {
+      _historyManager.updateChildrenWidgets();
+    });
     _makeComputerMove();
   }
 
@@ -213,20 +214,9 @@ class _MyHomePageState extends State<MyHomePage> with WindowListener {
     Do not update state itself.
   */
   void _addMoveToHistory() {
-    if (_currentGameHistoryNode != null) {
+    if (_historyManager.currentNode != null) {
       final whiteMove = _gameLogic.turn == chess.Color.WHITE;
       final lastPlayedMove = _gameLogic.history.last.move;
-
-      /*
-      We need to know if it was white move before the move which
-      we want to add history node(s).
-      */
-      if (!whiteMove && !_gameStart) {
-        final moveNumberCaption = "${_gameLogic.fen.split(' ')[5]}.";
-        final nextHistoryNode = HistoryNode(caption: moveNumberCaption);
-        _currentGameHistoryNode?.next = nextHistoryNode;
-        _currentGameHistoryNode = nextHistoryNode;
-      }
 
       // In order to get move SAN, it must not be done on board yet !
       // So we rollback the move, then we'll make it happen again.
@@ -245,16 +235,15 @@ class _MyHomePageState extends State<MyHomePage> with WindowListener {
         to: Cell.fromSquareIndex(relatedMoveToSquareIndex),
       );
 
-      final nextHistoryNode = HistoryNode(
-        caption: fan,
-        fen: _gameLogic.fen,
-        relatedMove: relatedMove,
-      );
       setState(() {
-        _currentGameHistoryNode?.next = nextHistoryNode;
-        _currentGameHistoryNode = nextHistoryNode;
+        _historyManager.addMove(
+          isWhiteTurnNow: whiteMove,
+          isGameStart: _gameStart,
+          lastMoveFan: fan,
+          position: _gameLogic.fen,
+          lastPlayedMove: relatedMove,
+        );
       });
-      _updateHistoryChildrenWidgets();
     }
   }
 
@@ -299,21 +288,10 @@ class _MyHomePageState extends State<MyHomePage> with WindowListener {
       });
       if (_gameLogic.game_over) {
         final gameResultString = _getGameResultString();
-        final nextHistoryNode = HistoryNode(caption: gameResultString);
 
         setState(() {
-          _selectedHistoryNode = _currentGameHistoryNode;
-          _lastMoveArrow = BoardArrow(
-            from: _currentGameHistoryNode!.relatedMove!.from.toString(),
-            to: _currentGameHistoryNode!.relatedMove!.to.toString(),
-            color: Colors.blueAccent,
-          );
-          _currentGameHistoryNode?.next = nextHistoryNode;
-          _currentGameHistoryNode = nextHistoryNode;
-        });
-        _updateHistoryChildrenWidgets();
-
-        setState(() {
+          _addMoveToHistory();
+          _historyManager.addResultString(gameResultString);
           _whitePlayerType = PlayerType.computer;
           _blackPlayerType = PlayerType.computer;
           _gameInProgress = false;
@@ -366,12 +344,7 @@ class _MyHomePageState extends State<MyHomePage> with WindowListener {
       final moveNumber = parts[5];
       final caption = "$moveNumber${whiteTurn ? '.' : '...'}";
       _lastMoveArrow = null;
-      _selectedHistoryNode = null;
-      _gameHistoryTree = HistoryNode(caption: caption);
-      _currentGameHistoryNode = _gameHistoryTree;
-    });
-    _updateHistoryChildrenWidgets();
-    setState(() {
+      _historyManager.newGame(caption);
       _stockfishManager.startEvaluation(
         positionFen: _gameLogic.fen,
         thinkingTimeMs: _prefs.getDouble('engineThinkingTime') ?? 1000.0,
@@ -438,14 +411,6 @@ class _MyHomePageState extends State<MyHomePage> with WindowListener {
 
   void _updateHistoryChildrenWidgets() {
     setState(() {
-      if (_gameHistoryTree != null) {
-        _historyElementsTree = recursivelyBuildElementsFromHistoryTree(
-          fontSize: 40,
-          selectedHistoryNode: _selectedHistoryNode,
-          tree: _gameHistoryTree!,
-          onHistoryMoveRequested: onHistoryMoveRequested,
-        );
-      }
       if (_gameInProgress) {
         _historyScrollController.animateTo(
           _historyScrollController.position.maxScrollExtent,
@@ -453,9 +418,10 @@ class _MyHomePageState extends State<MyHomePage> with WindowListener {
           curve: Curves.easeIn,
         );
       } else {
-        if (_selectedHistoryNode != null) {
+        if (_historyManager.selectedNode != null) {
           var selectedNodeIndex = getHistoryNodeIndex(
-              node: _selectedHistoryNode!, rootNode: _gameHistoryTree!);
+              node: _historyManager.selectedNode!,
+              rootNode: _historyManager.gameHistoryTree!);
           var selectedLine = selectedNodeIndex ~/ 6;
           _historyScrollController.animateTo(
             selectedLine * 40.0,
@@ -506,24 +472,24 @@ class _MyHomePageState extends State<MyHomePage> with WindowListener {
   }
 
   void _stopCurrentGame() {
-    final nextHistoryNode = HistoryNode(caption: '*');
     setState(() {
-      if (_currentGameHistoryNode?.relatedMove != null) {
+      if (_historyManager.currentNode?.relatedMove != null) {
         _lastMoveArrow = BoardArrow(
-          from: _currentGameHistoryNode!.relatedMove!.from.toString(),
-          to: _currentGameHistoryNode!.relatedMove!.to.toString(),
+          from: _historyManager.currentNode!.relatedMove!.from.toString(),
+          to: _historyManager.currentNode!.relatedMove!.to.toString(),
           color: Colors.blueAccent,
         );
-        _selectedHistoryNode = _currentGameHistoryNode;
+        _historyManager.selectCurrentNode();
       }
-      _currentGameHistoryNode?.next = nextHistoryNode;
-      _currentGameHistoryNode = nextHistoryNode;
+      _historyManager.addResultString('*');
       _gameInProgress = false;
       _engineThinking = false;
       _whitePlayerType = PlayerType.computer;
       _blackPlayerType = PlayerType.computer;
     });
-    _updateHistoryChildrenWidgets();
+    setState(() {
+      _historyManager.updateChildrenWidgets();
+    });
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Row(
@@ -589,116 +555,60 @@ class _MyHomePageState extends State<MyHomePage> with WindowListener {
     );
   }
 
-  void onHistoryMoveRequested({
-    required Move historyMove,
-    required HistoryNode? selectedHistoryNode,
-  }) {
-    if (_gameInProgress) return;
-    setState(() {
-      _selectedHistoryNode = selectedHistoryNode;
-      _lastMoveArrow = BoardArrow(
-        from: _selectedHistoryNode!.relatedMove!.from.toString(),
-        to: _selectedHistoryNode!.relatedMove!.to.toString(),
-        color: Colors.blueAccent,
-      );
-      _gameLogic = chess.Chess();
-      _gameLogic.load(
-        selectedHistoryNode!.fen!,
-      );
-    });
-    _updateHistoryChildrenWidgets();
-  }
-
   void _requestGotoFirst() {
     if (_gameInProgress) return;
     setState(() {
       _lastMoveArrow = null;
-      _selectedHistoryNode = null;
+      _historyManager.gotoFirst();
+      _gameLogic = chess.Chess();
+      _gameLogic.load(_startPosition);
+      _historyManager.updateChildrenWidgets();
+    });
+  }
+
+  void _selectStartPosition() {
+    setState(() {
+      _lastMoveArrow = null;
       _gameLogic = chess.Chess();
       _gameLogic.load(_startPosition);
     });
-    _updateHistoryChildrenWidgets();
+  }
+
+  void _selectPosition({
+    required String from,
+    required String to,
+    required String position,
+  }) {
+    setState(() {
+      _lastMoveArrow = BoardArrow(
+        from: from,
+        to: to,
+        color: Colors.blueAccent,
+      );
+      _gameLogic = chess.Chess();
+      _gameLogic.load(position);
+    });
   }
 
   void _requestGotoPrevious() {
     if (_gameInProgress) return;
-    var previousNode = _gameHistoryTree;
-    var newSelectedNode = previousNode;
-    if (previousNode != null) {
-      while (previousNode?.next != _selectedHistoryNode) {
-        previousNode = previousNode?.next != null
-            ? HistoryNode.from(previousNode!.next!)
-            : null;
-        if (previousNode?.relatedMove != null) newSelectedNode = previousNode;
-      }
-      if (newSelectedNode?.relatedMove != null) {
-        setState(() {
-          _lastMoveArrow = BoardArrow(
-            from: newSelectedNode!.relatedMove!.from.toString(),
-            to: newSelectedNode.relatedMove!.to.toString(),
-            color: Colors.blueAccent,
-          );
-          _selectedHistoryNode = newSelectedNode;
-          _gameLogic = chess.Chess();
-          _gameLogic.load(newSelectedNode.fen!);
-        });
-        _updateHistoryChildrenWidgets();
-      }
-    }
+    setState(() {
+      _historyManager.gotoPrevious();
+    });
   }
 
   void _requestGotoNext() {
     if (_gameInProgress) return;
-    var nextNode = _selectedHistoryNode != null
-        ? _selectedHistoryNode!.next
-        : _gameHistoryTree;
-    if (nextNode != null) {
-      while (nextNode != null && nextNode.relatedMove == null) {
-        nextNode = nextNode.next;
-      }
-      if (nextNode != null && nextNode.relatedMove != null) {
-        setState(() {
-          _lastMoveArrow = BoardArrow(
-            from: nextNode!.relatedMove!.from.toString(),
-            to: nextNode.relatedMove!.to.toString(),
-            color: Colors.blueAccent,
-          );
-          _selectedHistoryNode = nextNode;
-          _gameLogic = chess.Chess();
-          _gameLogic.load(nextNode.fen!);
-        });
-        _updateHistoryChildrenWidgets();
-      }
-    }
+    setState(() {
+      _historyManager.gotoNext();
+    });
   }
 
   void _requestGotoLast() {
     if (_gameInProgress) return;
-    var nextNode = _selectedHistoryNode != null
-        ? _selectedHistoryNode!.next
-        : _gameHistoryTree;
-    var newSelectedNode = nextNode;
-
-    while (true) {
-      nextNode =
-          nextNode?.next != null ? HistoryNode.from(nextNode!.next!) : null;
-      if (nextNode == null) break;
-      if (nextNode.fen != null) {
-        newSelectedNode = nextNode;
-      }
-    }
-
     setState(() {
-      _lastMoveArrow = BoardArrow(
-        from: newSelectedNode!.relatedMove!.from.toString(),
-        to: newSelectedNode.relatedMove!.to.toString(),
-        color: Colors.blueAccent,
-      );
-      _selectedHistoryNode = newSelectedNode;
+      _historyManager.gotoLast();
     });
-    _updateHistoryChildrenWidgets();
-    _gameLogic = chess.Chess();
-    _gameLogic.load(newSelectedNode!.fen!);
   }
 
   Future<void> _accessSettings() async {
@@ -808,7 +718,7 @@ class _MyHomePageState extends State<MyHomePage> with WindowListener {
         orientation: _orientation,
         whitePlayerType: _whitePlayerType,
         blackPlayerType: _blackPlayerType,
-        historyElementsTree: _historyElementsTree,
+        historyElementsTree: _historyManager.elementsTree,
         scrollController: _historyScrollController,
         onMove: _tryMakingMove,
         onPromote: _handlePromotion,

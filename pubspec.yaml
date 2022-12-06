@@ -43,7 +43,7 @@ dependencies:
   shared_preferences: ^2.0.13
   file_picker: ^5.1.0
   fpdart: ^0.2.0
-  chess_loloof64: ^0.1.2
+  chess: ^0.8.0
   editable_chess_board: ^0.1.2
   stockfish_chess_engine: ^0.3.0
   window_manager: ^0.2.7

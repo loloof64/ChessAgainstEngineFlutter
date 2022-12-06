@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:editable_chess_board/editable_chess_board.dart';
 import 'package:flutter_i18n/flutter_i18n.dart';
-import 'package:chess_loloof64/chess_loloof64.dart' as chess;
+import 'package:chess/chess.dart' as chess;
 import '../components/dialog_buttons.dart';
 
 class NewGamePositionEditorScreenArguments {

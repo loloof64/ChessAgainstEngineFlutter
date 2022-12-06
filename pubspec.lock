@@ -23,14 +23,14 @@ packages:
     source: hosted
     version: "1.2.1"
   chess:
-    dependency: transitive
+    dependency: "direct main"
     description:
       name: chess
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "0.7.0"
+    version: "0.8.0"
   chess_loloof64:
-    dependency: "direct main"
+    dependency: transitive
     description:
       name: chess_loloof64
       url: "https://pub.dartlang.org"
@@ -370,7 +370,7 @@ packages:
       name: simple_chess_board
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "0.3.2"
+    version: "0.3.8"
   sky_engine:
     dependency: transitive
     description: flutter
