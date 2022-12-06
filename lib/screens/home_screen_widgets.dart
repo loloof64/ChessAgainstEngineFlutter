@@ -71,6 +71,7 @@ class HomePageBody extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: <Widget>[
                   HomePageChessboardZone(
+                    lastMoveToHighlight: lastMoveToHighlight,
                     engineIsThinking: engineIsThinking,
                     positionFen: positionFen,
                     orientation: orientation,
@@ -106,6 +107,7 @@ class HomePageBody extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: <Widget>[
                   HomePageChessboardZone(
+                    lastMoveToHighlight: lastMoveToHighlight,
                     engineIsThinking: engineIsThinking,
                     positionFen: positionFen,
                     orientation: orientation,
@@ -153,7 +155,7 @@ class HomePageChessboardZone extends StatelessWidget {
 
   const HomePageChessboardZone({
     super.key,
-    this.lastMoveToHighlight,
+    required this.lastMoveToHighlight,
     required this.engineIsThinking,
     required this.positionFen,
     required this.orientation,
@@ -206,7 +208,6 @@ class HomePageInformationZone extends StatelessWidget {
   final double score;
   final List<HistoryElement> historyElementsTree;
   final ScrollController scrollController;
-
   final void Function(bool? newValue) onScoreVisibleStatusChanged;
   final void Function(double newValue) onSkillLevelChanged;
   final void Function() onGotoFirstRequest;
