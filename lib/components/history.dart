@@ -74,7 +74,10 @@ class ChessHistory extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return LayoutBuilder(builder: (ctx2, constraints) {
-      final commonSize = constraints.maxWidth * 0.20;
+      double commonSize = constraints.maxWidth * 0.20;
+      if (commonSize < 25) {
+        commonSize = 25;
+      }
       return Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[
