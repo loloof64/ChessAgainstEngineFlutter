@@ -38,6 +38,13 @@ class StockfishManager {
 
   void start() async {
     try {
+      if (_stockfish.state.value == StockfishState.ready ||
+          _stockfish.state.value == StockfishState.starting) {
+        return;
+      }
+      // ignore: empty_catches
+    } catch (ex) {}
+    try {
       _stockfishOutputSubsciption.cancel();
       // ignore: empty_catches
     } catch (ex) {}
