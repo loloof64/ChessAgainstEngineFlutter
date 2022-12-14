@@ -70,15 +70,19 @@ class HomePageBody extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.center,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: <Widget>[
-                  HomePageChessboardZone(
-                    lastMoveToHighlight: lastMoveToHighlight,
-                    engineIsThinking: engineIsThinking,
-                    positionFen: positionFen,
-                    orientation: orientation,
-                    whitePlayerType: whitePlayerType,
-                    blackPlayerType: blackPlayerType,
-                    onMove: onMove,
-                    onPromote: onPromote,
+                  Flexible(
+                    child: Center(
+                      child: HomePageChessboardZone(
+                        lastMoveToHighlight: lastMoveToHighlight,
+                        engineIsThinking: engineIsThinking,
+                        positionFen: positionFen,
+                        orientation: orientation,
+                        whitePlayerType: whitePlayerType,
+                        blackPlayerType: blackPlayerType,
+                        onMove: onMove,
+                        onPromote: onPromote,
+                      ),
+                    ),
                   ),
                   const SizedBox(
                     width: commonDiviserSize,
@@ -106,15 +110,19 @@ class HomePageBody extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.center,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: <Widget>[
-                  HomePageChessboardZone(
-                    lastMoveToHighlight: lastMoveToHighlight,
-                    engineIsThinking: engineIsThinking,
-                    positionFen: positionFen,
-                    orientation: orientation,
-                    whitePlayerType: whitePlayerType,
-                    blackPlayerType: blackPlayerType,
-                    onMove: onMove,
-                    onPromote: onPromote,
+                  Flexible(
+                    child: Center(
+                      child: HomePageChessboardZone(
+                        lastMoveToHighlight: lastMoveToHighlight,
+                        engineIsThinking: engineIsThinking,
+                        positionFen: positionFen,
+                        orientation: orientation,
+                        whitePlayerType: whitePlayerType,
+                        blackPlayerType: blackPlayerType,
+                        onMove: onMove,
+                        onPromote: onPromote,
+                      ),
+                    ),
                   ),
                   const SizedBox(
                     height: commonDiviserSize,
@@ -171,28 +179,25 @@ class HomePageChessboardZone extends StatelessWidget {
       final availableBoardSize = constraints.maxWidth < constraints.maxHeight
           ? constraints.maxWidth
           : constraints.maxHeight;
-      return SizedBox(
-        height: availableBoardSize,
-        child: Stack(
-          children: [
-            SimpleChessBoard(
-                lastMoveToHighlight: lastMoveToHighlight,
-                fen: positionFen,
-                orientation: orientation,
-                whitePlayerType: whitePlayerType,
-                blackPlayerType: blackPlayerType,
-                onMove: onMove,
-                onPromote: onPromote),
-            if (engineIsThinking)
-              Center(
-                child: SizedBox(
-                  width: availableBoardSize,
-                  height: availableBoardSize,
-                  child: const CircularProgressIndicator(),
-                ),
+      return Stack(
+        children: [
+          SimpleChessBoard(
+              lastMoveToHighlight: lastMoveToHighlight,
+              fen: positionFen,
+              orientation: orientation,
+              whitePlayerType: whitePlayerType,
+              blackPlayerType: blackPlayerType,
+              onMove: onMove,
+              onPromote: onPromote),
+          if (engineIsThinking)
+            Center(
+              child: SizedBox(
+                width: availableBoardSize,
+                height: availableBoardSize,
+                child: const CircularProgressIndicator(),
               ),
-          ],
-        ),
+            ),
+        ],
       );
     });
   }
