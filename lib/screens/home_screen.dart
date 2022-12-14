@@ -612,36 +612,56 @@ class _MyHomePageState extends State<MyHomePage> with WindowListener {
             icon: const Icon(Icons.settings),
           ),
           if (!kReleaseMode)
-            DecoratedBox(
-              decoration: BoxDecoration(
-                border: Border.all(
-                  color: Colors.red,
-                  width: 5.0,
+            PopupMenuButton(itemBuilder: (BuildContext context) {
+              return <PopupMenuItem>[
+                PopupMenuItem(
+                  value: 0,
+                  child: Row(
+                    children: [
+                      IconButton(
+                        onPressed: _doStartStockfish,
+                        icon: const Icon(
+                          Icons.start,
+                          color: Colors.green,
+                        ),
+                      ),
+                      const Text(
+                        'Start stockfish',
+                        style: TextStyle(
+                          color: Colors.green,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-              child: Row(
-                children: [
-                  IconButton(
-                    onPressed: _doStartStockfish,
-                    icon: const Icon(
-                      Icons.start,
-                    ),
+                PopupMenuItem(
+                  value: 1,
+                  child: Row(
+                    children: [
+                      IconButton(
+                        onPressed: _stopStockfish,
+                        icon: const Icon(
+                          Icons.stop,
+                          color: Colors.red,
+                        ),
+                      ),
+                      const Text(
+                        'Stop stockfish',
+                        style: TextStyle(
+                          color: Colors.red,
+                        ),
+                      ),
+                    ],
                   ),
-                  IconButton(
-                    onPressed: _stopStockfish,
-                    icon: const Icon(
-                      Icons.stop,
-                    ),
+                ),
+                PopupMenuItem(
+                  value: 2,
+                  child: CircleAvatar(
+                    backgroundColor: stockfishStatusColor,
                   ),
-                  Padding(
-                    padding: const EdgeInsets.all(10.0),
-                    child: CircleAvatar(
-                      backgroundColor: stockfishStatusColor,
-                    ),
-                  ),
-                ],
-              ),
-            ),
+                )
+              ];
+            }),
         ],
       ),
       body: HomePageBody(
