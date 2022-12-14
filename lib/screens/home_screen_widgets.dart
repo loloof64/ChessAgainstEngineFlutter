@@ -175,31 +175,27 @@ class HomePageChessboardZone extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return LayoutBuilder(builder: (ctx2, constraints) {
-      final availableBoardSize = constraints.maxWidth < constraints.maxHeight
-          ? constraints.maxWidth
-          : constraints.maxHeight;
-      return Stack(
-        children: [
-          SimpleChessBoard(
-              lastMoveToHighlight: lastMoveToHighlight,
-              fen: positionFen,
-              orientation: orientation,
-              whitePlayerType: whitePlayerType,
-              blackPlayerType: blackPlayerType,
-              onMove: onMove,
-              onPromote: onPromote),
-          if (engineIsThinking)
-            Center(
-              child: SizedBox(
-                width: availableBoardSize,
-                height: availableBoardSize,
-                child: const CircularProgressIndicator(),
-              ),
-            ),
-        ],
-      );
-    });
+    return Stack(
+      children: [
+        SimpleChessBoard(
+            lastMoveToHighlight: lastMoveToHighlight,
+            fen: positionFen,
+            orientation: orientation,
+            whitePlayerType: whitePlayerType,
+            blackPlayerType: blackPlayerType,
+            onMove: onMove,
+            onPromote: onPromote),
+        if (engineIsThinking)
+          LayoutBuilder(builder: (ctx2, constaints2) {
+            final size = constaints2.biggest.shortestSide;
+            return SizedBox(
+              width: size,
+              height: size,
+              child: const CircularProgressIndicator(),
+            );
+          })
+      ],
+    );
   }
 }
 
