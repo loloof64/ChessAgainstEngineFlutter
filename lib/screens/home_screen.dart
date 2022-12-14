@@ -612,20 +612,26 @@ class _MyHomePageState extends State<MyHomePage> with WindowListener {
             icon: const Icon(Icons.settings),
           ),
           if (!kReleaseMode)
-            PopupMenuButton(itemBuilder: (BuildContext context) {
-              return <PopupMenuItem>[
+            PopupMenuButton<int>(onSelected: (int item) {
+              switch (item) {
+                case 0:
+                  _doStartStockfish();
+                  break;
+                case 1:
+                  _stopStockfish();
+                  break;
+              }
+            }, itemBuilder: (BuildContext context) {
+              return <PopupMenuItem<int>>[
                 PopupMenuItem(
                   value: 0,
                   child: Row(
-                    children: [
-                      IconButton(
-                        onPressed: _doStartStockfish,
-                        icon: const Icon(
-                          Icons.start,
-                          color: Colors.green,
-                        ),
+                    children: const [
+                      Icon(
+                        Icons.start,
+                        color: Colors.green,
                       ),
-                      const Text(
+                      Text(
                         'Start stockfish',
                         style: TextStyle(
                           color: Colors.green,
@@ -637,15 +643,12 @@ class _MyHomePageState extends State<MyHomePage> with WindowListener {
                 PopupMenuItem(
                   value: 1,
                   child: Row(
-                    children: [
-                      IconButton(
-                        onPressed: _stopStockfish,
-                        icon: const Icon(
-                          Icons.stop,
-                          color: Colors.red,
-                        ),
+                    children: const [
+                      Icon(
+                        Icons.stop,
+                        color: Colors.red,
                       ),
-                      const Text(
+                      Text(
                         'Stop stockfish',
                         style: TextStyle(
                           color: Colors.red,
