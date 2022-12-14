@@ -346,14 +346,6 @@ class HomePageEvaluationZone extends StatelessWidget {
                   min: skillLevelMin.toDouble(),
                   max: skillLevelMax.toDouble(),
                   onChanged: onSkillLevelChanged,
-                  /* (newValue) {
-                    setState(() {
-                      _skillLevel = newValue.toInt();
-                      _stockfish.stdin =
-                          'setoption name Skill Level value $_skillLevel';
-                    });
-                  },
-                  */
                 ),
                 Text(skillLevel.toString()),
               ],
@@ -384,11 +376,27 @@ class HomePageHistoryZone extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final historyWidgetsTree = historyElementsTree.map((currentElement) {
+    return Expanded(
+      child: LayoutBuilder(builder: (ctx2, constraints2) {
+        final fontSize = constraints2.biggest.shortestSide * 0.09;
+        return ChessHistory(
+          scrollController: scrollController,
+          requestGotoFirst: onGotoFirstRequest,
+          requestGotoPrevious: onGotoPreviousRequest,
+          requestGotoNext: onGotoNextRequest,
+          requestGotoLast: onGotoLastRequest,
+          children: _buildHistoryWidgetsTree(fontSize),
+        );
+      }),
+    );
+  }
+
+  List<Widget> _buildHistoryWidgetsTree(double fontSize) {
+    return historyElementsTree.map((currentElement) {
       final textComponent = Text(
         currentElement.text,
         style: TextStyle(
-          fontSize: currentElement.fontSize,
+          fontSize: fontSize,
           fontFamily: 'FreeSerif',
           backgroundColor: currentElement.backgroundColor,
           color: currentElement.textColor,
@@ -404,16 +412,5 @@ class HomePageHistoryZone extends StatelessWidget {
         return textComponent;
       }
     }).toList();
-
-    return Expanded(
-      child: ChessHistory(
-        scrollController: scrollController,
-        requestGotoFirst: onGotoFirstRequest,
-        requestGotoPrevious: onGotoPreviousRequest,
-        requestGotoNext: onGotoNextRequest,
-        requestGotoLast: onGotoLastRequest,
-        children: historyWidgetsTree,
-      ),
-    );
   }
 }

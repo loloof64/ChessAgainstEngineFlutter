@@ -142,14 +142,12 @@ class HistoryNode {
 
 /// An element describing an history element to be rendered.
 abstract class HistoryElement {
-  final double fontSize;
   final String text;
   final Color textColor;
   final Color backgroundColor;
 
   HistoryElement({
     required this.text,
-    required this.fontSize,
     required this.textColor,
     required this.backgroundColor,
   });
@@ -163,7 +161,6 @@ class NotInteractiveElement extends HistoryElement {
     required Color backgroundColor,
   }) : super(
           text: text,
-          fontSize: fontSize,
           textColor: textColor,
           backgroundColor: backgroundColor,
         );
@@ -180,7 +177,6 @@ class MoveLinkElement extends HistoryElement {
     required this.onPressed,
   }) : super(
           text: text,
-          fontSize: fontSize,
           textColor: textColor,
           backgroundColor: backgroundColor,
         );
