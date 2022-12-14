@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:chess_against_engine/logic/managers/game_manager.dart';
 import 'package:chess_against_engine/logic/managers/history_manager.dart';
 import 'package:chess_against_engine/logic/managers/stockfish_manager.dart';
 import 'package:chess/chess.dart' as chess;
@@ -15,11 +16,8 @@ import 'package:window_manager/window_manager.dart';
 
 import '../components/dialog_buttons.dart';
 import '../logic/history_builder.dart' hide File;
-import '../logic/utils.dart';
 import '../screens/home_screen_widgets.dart';
 import '../screens/new_game_screen.dart';
-
-const emptyPosition = '8/8/8/8/8/8/8/8 w - - 0 1';
 
 class MyHomePage extends StatefulWidget {
   const MyHomePage({Key? key}) : super(key: key);
@@ -29,21 +27,12 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> with WindowListener {
-  chess.Chess _gameLogic = chess.Chess();
   BoardColor _orientation = BoardColor.white;
-  PlayerType _whitePlayerType = PlayerType.computer;
-  PlayerType _blackPlayerType = PlayerType.computer;
-  bool _cpuCanPlay = false;
-  String _startPosition = chess.Chess.DEFAULT_POSITION;
-  bool _gameStart = false;
-  bool _gameInProgress = false;
   bool _skillLevelEditable = false;
   int _skillLevel = -1;
   int _skillLevelMin = -1;
   int _skillLevelMax = -1;
-  bool _engineThinking = false;
   bool _scoreVisible = false;
-  double _score = 0.0;
 
   final ScrollController _historyScrollController =
       ScrollController(initialScrollOffset: 0.0, keepScrollOffset: true);
@@ -52,6 +41,7 @@ class _MyHomePageState extends State<MyHomePage> with WindowListener {
 
   late StockfishManager _stockfishManager;
   late HistoryManager _historyManager;
+  late GameManager _gameManager;
 
   @override
   void initState() {
@@ -70,14 +60,14 @@ class _MyHomePageState extends State<MyHomePage> with WindowListener {
       onSelectStartPosition: _selectStartPosition,
       isStartMoveNumber: _isStartMoveNumber,
     );
+    _gameManager = GameManager();
     _doStartStockfish();
-    _gameLogic.load(emptyPosition);
     _initPreferences();
     super.initState();
   }
 
   bool _isStartMoveNumber(int moveNumber) {
-    return int.parse(_startPosition.split(' ')[5]) == moveNumber;
+    return int.parse(_gameManager.startPosition.split(' ')[5]) == moveNumber;
   }
 
   void _setSkillLevelOption({
@@ -129,29 +119,31 @@ class _MyHomePageState extends State<MyHomePage> with WindowListener {
     required String to,
     required String? promotion,
   }) {
-    if (!_cpuCanPlay) return;
-    if (!_gameInProgress) return;
-    final moveHasBeenMade =
-        _gameLogic.move({'from': from, 'to': to, 'promotion': promotion});
+    if (!_gameManager.cpuCanPlay) return;
+    if (!_gameManager.gameInProgress) return;
 
-    if (!moveHasBeenMade) return;
+    setState(() {
+      final moveHasBeenMade = _gameManager.processComputerMove(
+        from: from,
+        to: to,
+        promotion: promotion,
+      );
+
+      if (!moveHasBeenMade) return;
+    });
 
     setState(() {
       _lastMoveArrow = BoardArrow(from: from, to: to, color: Colors.blueAccent);
       _addMoveToHistory();
-      _gameStart = false;
-      _engineThinking = false;
-      _cpuCanPlay = false;
+      _gameManager.clearGameStartFlag();
     });
 
-    if (_gameLogic.game_over) {
-      final gameResultString = _getGameResultString();
+    if (_gameManager.isGameOver) {
+      final gameResultString = _gameManager.getResultString();
 
       setState(() {
+        _gameManager.stopGame();
         _historyManager.addResultString(gameResultString);
-        _whitePlayerType = PlayerType.computer;
-        _blackPlayerType = PlayerType.computer;
-        _gameInProgress = false;
         _historyManager.gotoLast();
       });
 
@@ -160,7 +152,7 @@ class _MyHomePageState extends State<MyHomePage> with WindowListener {
           content: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              _getGameEndedType(),
+              _gameManager.getGameEndedType(),
             ],
           ),
         ),
@@ -178,33 +170,32 @@ class _MyHomePageState extends State<MyHomePage> with WindowListener {
   }
 
   void _makeComputerMove() {
-    if (!_gameInProgress) return;
-    final whiteTurn = _gameLogic.turn == chess.Color.WHITE;
+    if (!_gameManager.gameInProgress) return;
+    final whiteTurn = _gameManager.whiteTurn;
     final computerTurn =
-        (whiteTurn && _whitePlayerType == PlayerType.computer) ||
-            (!whiteTurn && _blackPlayerType == PlayerType.computer);
+        (whiteTurn && _gameManager.whitePlayerType == PlayerType.computer) ||
+            (!whiteTurn && _gameManager.blackPlayerType == PlayerType.computer);
     if (!computerTurn) return;
 
     setState(() {
-      _engineThinking = true;
-      _cpuCanPlay = true;
+      _gameManager.allowCpuThinking();
       _stockfishManager.startEvaluation(
-        positionFen: _gameLogic.fen,
+        positionFen: _gameManager.position,
         thinkingTimeMs: _prefs.getDouble('engineThinkingTime') ?? 1000.0,
       );
     });
   }
 
   void _handleScoreCp({required double scoreCp}) {
-    final cpuHasBlack = _whitePlayerType == PlayerType.human &&
-        _blackPlayerType == PlayerType.computer;
-    final cpuTurnAsBlack = cpuHasBlack && _cpuCanPlay;
+    final cpuHasBlack = _gameManager.whitePlayerType == PlayerType.human &&
+        _gameManager.blackPlayerType == PlayerType.computer;
+    final cpuTurnAsBlack = cpuHasBlack && _gameManager.cpuCanPlay;
     var realScore = scoreCp;
     if (cpuTurnAsBlack) {
       realScore *= -1;
     }
     setState(() {
-      _score = realScore;
+      _gameManager.updateScore(realScore);
     });
   }
 
@@ -215,25 +206,11 @@ class _MyHomePageState extends State<MyHomePage> with WindowListener {
   */
   void _addMoveToHistory() {
     if (_historyManager.currentNode != null) {
-      final whiteMove = _gameLogic.turn == chess.Color.WHITE;
-      final lastPlayedMove = _gameLogic.history.last.move;
-
-      // In order to get move SAN, it must not be done on board yet !
-      // So we rollback the move, then we'll make it happen again.
-      _gameLogic.undo_move();
-      final san = _gameLogic.move_to_san(lastPlayedMove);
-      _gameLogic.make_move(lastPlayedMove);
-
-      // Move has been played: we need to revert player turn for the SAN.
-      final fan = san.toFan(whiteMove: !whiteMove);
-      final relatedMoveFromSquareIndex = CellIndexConverter(lastPlayedMove.from)
-          .convertSquareIndexFromChessLib();
-      final relatedMoveToSquareIndex = CellIndexConverter(lastPlayedMove.to)
-          .convertSquareIndexFromChessLib();
-      final relatedMove = Move(
-        from: Cell.fromSquareIndex(relatedMoveFromSquareIndex),
-        to: Cell.fromSquareIndex(relatedMoveToSquareIndex),
-      );
+      final whiteMove = _gameManager.whiteTurn;
+      final lastMoveFan = _gameManager.getLastMoveFan();
+      final relatedMove = _gameManager.getLastMove();
+      final gameStart = _gameManager.isGameStart;
+      final position = _gameManager.position;
 
       setState(() {
         _lastMoveArrow = BoardArrow(
@@ -242,78 +219,48 @@ class _MyHomePageState extends State<MyHomePage> with WindowListener {
             color: Colors.blueAccent);
         _historyManager.addMove(
           isWhiteTurnNow: whiteMove,
-          isGameStart: _gameStart,
-          lastMoveFan: fan,
-          position: _gameLogic.fen,
+          isGameStart: gameStart,
+          lastMoveFan: lastMoveFan,
+          position: position,
           lastPlayedMove: relatedMove,
         );
       });
     }
   }
 
-  String _getGameResultString() {
-    if (_gameLogic.in_checkmate) {
-      return _gameLogic.turn == chess.Color.WHITE ? '0-1' : '1-0';
-    }
-    if (_gameLogic.in_draw) {
-      return '1/2-1/2';
-    }
-    return '*';
-  }
-
-  Widget _getGameEndedType() {
-    dynamic result;
-    if (_gameLogic.in_checkmate) {
-      result = (_gameLogic.turn == chess.Color.WHITE)
-          ? I18nText('game_termination.black_checkmate_white')
-          : I18nText('game_termination.white_checkmate_black');
-    } else if (_gameLogic.in_stalemate) {
-      result = I18nText('game_termination.stalemate');
-    } else if (_gameLogic.in_threefold_repetition) {
-      result = I18nText('game_termination.repetitions');
-    } else if (_gameLogic.insufficient_material) {
-      result = I18nText('game_termination.insufficient_material');
-    } else if (_gameLogic.in_draw) {
-      result = I18nText('game_termination.fifty_moves');
-    }
-    return result;
-  }
-
   void _tryMakingMove({required ShortMove move}) {
-    final moveHasBeenMade = _gameLogic.move({
-      'from': move.from,
-      'to': move.to,
-      'promotion': move.promotion.map((t) => t.name).toNullable(),
+    setState(() {
+      final moveHasBeenMade = _gameManager.processPlayerMove(
+        from: move.from,
+        to: move.to,
+        promotion: move.promotion.map((t) => t.name).toNullable(),
+      );
+      if (moveHasBeenMade) {
+        _addMoveToHistory();
+      }
+      _gameManager.clearGameStartFlag();
     });
-    if (moveHasBeenMade) {
+    if (_gameManager.isGameOver) {
+      final gameResultString = _gameManager.getResultString();
+
       setState(() {
         _addMoveToHistory();
-        _gameStart = false;
+        _historyManager.addResultString(gameResultString);
+        _gameManager.stopGame();
       });
-      if (_gameLogic.game_over) {
-        final gameResultString = _getGameResultString();
 
-        setState(() {
-          _addMoveToHistory();
-          _historyManager.addResultString(gameResultString);
-          _whitePlayerType = PlayerType.computer;
-          _blackPlayerType = PlayerType.computer;
-          _gameInProgress = false;
-        });
-
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                _getGameEndedType(),
-              ],
-            ),
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              _gameManager.getGameEndedType(),
+            ],
           ),
-        );
-      } else {
-        _makeComputerMove();
-      }
+        ),
+      );
+    } else {
+      _makeComputerMove();
     }
   }
 
@@ -327,30 +274,26 @@ class _MyHomePageState extends State<MyHomePage> with WindowListener {
     bool playerHasWhite = true,
   }) async {
     setState(() {
-      _score = 0.0;
       _historyScrollController.animateTo(
         0.0,
         duration: const Duration(milliseconds: 50),
         curve: Curves.easeIn,
       );
-      _startPosition = startPosition;
-      _whitePlayerType =
-          playerHasWhite ? PlayerType.human : PlayerType.computer;
-      _blackPlayerType =
-          playerHasWhite ? PlayerType.computer : PlayerType.human;
+
       _orientation = playerHasWhite ? BoardColor.white : BoardColor.black;
-      _gameStart = true;
-      _gameInProgress = true;
-      _gameLogic = chess.Chess();
-      _gameLogic.load(_startPosition);
+
       final parts = startPosition.split(' ');
       final whiteTurn = parts[1] == 'w';
       final moveNumber = parts[5];
       final caption = "$moveNumber${whiteTurn ? '.' : '...'}";
       _lastMoveArrow = null;
       _historyManager.newGame(caption);
+      _gameManager.startNewGame(
+        startPosition: startPosition,
+        playerHasWhite: playerHasWhite,
+      );
       _stockfishManager.startEvaluation(
-        positionFen: _gameLogic.fen,
+        positionFen: _gameManager.position,
         thinkingTimeMs: _prefs.getDouble('engineThinkingTime') ?? 1000.0,
       );
     });
@@ -372,7 +315,7 @@ class _MyHomePageState extends State<MyHomePage> with WindowListener {
 
   Future<PieceType?> _showPromotionDialog(BuildContext context) {
     const pieceSize = 60.0;
-    final whiteTurn = _gameLogic.fen.split(' ')[1] == 'w';
+    final whiteTurn = _gameManager.position.split(' ')[1] == 'w';
     return showDialog<PieceType>(
         context: context,
         builder: (_) {
@@ -415,7 +358,7 @@ class _MyHomePageState extends State<MyHomePage> with WindowListener {
 
   void _updateHistoryChildrenWidgets() {
     setState(() {
-      if (_gameInProgress) {
+      if (_gameManager.gameInProgress) {
         _historyScrollController.animateTo(
           _historyScrollController.position.maxScrollExtent,
           duration: const Duration(milliseconds: 50),
@@ -441,7 +384,7 @@ class _MyHomePageState extends State<MyHomePage> with WindowListener {
   }
 
   void _purposeStopGame() {
-    if (!_gameInProgress) return;
+    if (!_gameManager.gameInProgress) return;
     showDialog(
         context: context,
         builder: (BuildContext innerCtx) {
@@ -486,10 +429,7 @@ class _MyHomePageState extends State<MyHomePage> with WindowListener {
         _historyManager.selectCurrentNode();
       }
       _historyManager.addResultString('*');
-      _gameInProgress = false;
-      _engineThinking = false;
-      _whitePlayerType = PlayerType.computer;
-      _blackPlayerType = PlayerType.computer;
+      _gameManager.stopGame();
     });
     setState(() {
       _historyManager.updateChildrenWidgets();
@@ -505,7 +445,7 @@ class _MyHomePageState extends State<MyHomePage> with WindowListener {
   }
 
   Future<void> _goToNewGameOptionsPage() async {
-    String editPosition = _gameLogic.fen;
+    String editPosition = _gameManager.position;
     final editPositionEmpty = editPosition.split(' ')[0] == '8/8/8/8/8/8/8/8';
     if (editPositionEmpty) editPosition = chess.Chess.DEFAULT_POSITION;
     final gameParameters = await Navigator.of(context).pushNamed(
@@ -521,7 +461,7 @@ class _MyHomePageState extends State<MyHomePage> with WindowListener {
   }
 
   void _purposeRestartGame() {
-    final isEmptyPosition = _gameLogic.fen == emptyPosition;
+    final isEmptyPosition = _gameManager.position == emptyPosition;
     if (isEmptyPosition) {
       _goToNewGameOptionsPage();
       return;
@@ -560,12 +500,11 @@ class _MyHomePageState extends State<MyHomePage> with WindowListener {
   }
 
   void _requestGotoFirst() {
-    if (_gameInProgress) return;
+    if (_gameManager.gameInProgress) return;
     setState(() {
       _lastMoveArrow = null;
       _historyManager.gotoFirst();
-      _gameLogic = chess.Chess();
-      _gameLogic.load(_startPosition);
+      _gameManager.loadStartPosition();
       _historyManager.updateChildrenWidgets();
     });
   }
@@ -573,8 +512,7 @@ class _MyHomePageState extends State<MyHomePage> with WindowListener {
   void _selectStartPosition() {
     setState(() {
       _lastMoveArrow = null;
-      _gameLogic = chess.Chess();
-      _gameLogic.load(_startPosition);
+      _gameManager.loadStartPosition();
     });
   }
 
@@ -589,34 +527,33 @@ class _MyHomePageState extends State<MyHomePage> with WindowListener {
         to: to,
         color: Colors.blueAccent,
       );
-      _gameLogic = chess.Chess();
-      _gameLogic.load(position);
+      _gameManager.loadPosition(position);
     });
   }
 
   void _requestGotoPrevious() {
-    if (_gameInProgress) return;
+    if (_gameManager.gameInProgress) return;
     setState(() {
       _historyManager.gotoPrevious();
     });
   }
 
   void _requestGotoNext() {
-    if (_gameInProgress) return;
+    if (_gameManager.gameInProgress) return;
     setState(() {
       _historyManager.gotoNext();
     });
   }
 
   void _requestGotoLast() {
-    if (_gameInProgress) return;
+    if (_gameManager.gameInProgress) return;
     setState(() {
       _historyManager.gotoLast();
     });
   }
 
   Future<void> _accessSettings() async {
-    if (_gameInProgress) return;
+    if (_gameManager.gameInProgress) return;
     var success = await Navigator.of(context).pushNamed('/settings');
     if (success == true) {
       if (!mounted) return;
@@ -710,30 +647,30 @@ class _MyHomePageState extends State<MyHomePage> with WindowListener {
       body: HomePageBody(
         isLandscape: isLandscape,
         lastMoveToHighlight: _lastMoveArrow,
-        engineIsThinking: _engineThinking,
-        gameInProgress: _gameInProgress,
+        engineIsThinking: _gameManager.engineThiking,
+        gameInProgress: _gameManager.gameInProgress,
         scoreVisible: _scoreVisible,
         skillLevelEditable: _skillLevelEditable,
         skillLevel: _skillLevel,
         skillLevelMin: _skillLevelMin,
         skillLevelMax: _skillLevelMax,
-        score: _score,
-        positionFen: _gameLogic.fen,
+        score: _gameManager.score,
+        positionFen: _gameManager.position,
         orientation: _orientation,
-        whitePlayerType: _whitePlayerType,
-        blackPlayerType: _blackPlayerType,
+        whitePlayerType: _gameManager.whitePlayerType,
+        blackPlayerType: _gameManager.blackPlayerType,
         historyElementsTree: _historyManager.elementsTree,
         scrollController: _historyScrollController,
         onMove: _tryMakingMove,
         onPromote: _handlePromotion,
         onScoreVisibleStatusChanged: (newValue) {
-          if (_gameInProgress) {
+          if (_gameManager.gameInProgress) {
             setState(() {
               _scoreVisible = newValue ?? false;
             });
             if (_scoreVisible) {
               _stockfishManager.startEvaluation(
-                positionFen: _gameLogic.fen,
+                positionFen: _gameManager.position,
                 thinkingTimeMs:
                     _prefs.getDouble('engineThinkingTime') ?? 1000.0,
               );

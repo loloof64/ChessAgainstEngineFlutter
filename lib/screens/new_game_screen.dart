@@ -79,103 +79,105 @@ class NewGameScreenState extends State<NewGameScreen> {
           padding: const EdgeInsets.all(8.0),
           child: SizedBox(
             width: 400,
-            child: Column(children: <Widget>[
-              SimpleChessBoard(
-                lastMoveToHighlight: null,
-                fen: _positionFen,
-                orientation: _orientation,
-                whitePlayerType: PlayerType.computer,
-                blackPlayerType: PlayerType.computer,
-                onMove: ({required move}) {},
-                onPromote: () async => null,
-              ),
-              Padding(
-                padding: const EdgeInsets.all(8.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    I18nText('new_game.position_editor.label_player_side'),
-                    ListTile(
-                      title: Text(
-                        FlutterI18n.translate(
-                          context,
-                          'new_game.position_editor.label_white_player',
-                        ),
-                      ),
-                      leading: Radio<bool>(
-                        groupValue: _playerHasWhite,
-                        value: true,
-                        onChanged: (value) {
-                          _onTurnChanged(value ?? true);
-                        },
-                      ),
-                    ),
-                    ListTile(
-                      title: Text(
-                        FlutterI18n.translate(
-                          context,
-                          'new_game.position_editor.label_black_player',
-                        ),
-                      ),
-                      leading: Radio<bool>(
-                        groupValue: _playerHasWhite,
-                        value: false,
-                        onChanged: (value) {
-                          _onTurnChanged(value ?? false);
-                        },
-                      ),
-                    ),
-                  ],
+            child: SingleChildScrollView(
+              child: Column(children: <Widget>[
+                SimpleChessBoard(
+                  lastMoveToHighlight: null,
+                  fen: _positionFen,
+                  orientation: _orientation,
+                  whitePlayerType: PlayerType.computer,
+                  blackPlayerType: PlayerType.computer,
+                  onMove: ({required move}) {},
+                  onPromote: () async => null,
                 ),
-              ),
-              Padding(
-                padding: const EdgeInsets.all(8.0),
-                child: ElevatedButton(
-                  onPressed: () {
-                    _showEditPositionPage();
-                  },
-                  child: I18nText(
-                    'new_game.edit_position',
+                Padding(
+                  padding: const EdgeInsets.all(8.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      I18nText('new_game.position_editor.label_player_side'),
+                      ListTile(
+                        title: Text(
+                          FlutterI18n.translate(
+                            context,
+                            'new_game.position_editor.label_white_player',
+                          ),
+                        ),
+                        leading: Radio<bool>(
+                          groupValue: _playerHasWhite,
+                          value: true,
+                          onChanged: (value) {
+                            _onTurnChanged(value ?? true);
+                          },
+                        ),
+                      ),
+                      ListTile(
+                        title: Text(
+                          FlutterI18n.translate(
+                            context,
+                            'new_game.position_editor.label_black_player',
+                          ),
+                        ),
+                        leading: Radio<bool>(
+                          groupValue: _playerHasWhite,
+                          value: false,
+                          onChanged: (value) {
+                            _onTurnChanged(value ?? false);
+                          },
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-              ),
-              Padding(
-                padding: const EdgeInsets.all(8.0),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Padding(
-                      padding: const EdgeInsets.all(2.0),
-                      child: DialogActionButton(
-                        onPressed: () async {
-                          Navigator.of(context).pop(
-                            NewGameParameters(
-                              startPositionFen:
-                                  _positionController.currentPosition,
-                              playerHasWhite: _playerHasWhite,
-                            ),
-                          );
-                        },
-                        textContent: I18nText('buttons.ok'),
-                        backgroundColor: Colors.greenAccent,
-                        textColor: Colors.white,
-                      ),
+                Padding(
+                  padding: const EdgeInsets.all(8.0),
+                  child: ElevatedButton(
+                    onPressed: () {
+                      _showEditPositionPage();
+                    },
+                    child: I18nText(
+                      'new_game.edit_position',
                     ),
-                    Padding(
-                      padding: const EdgeInsets.all(2.0),
-                      child: DialogActionButton(
-                        onPressed: () {
-                          Navigator.of(context).pop(null);
-                        },
-                        textContent: I18nText('buttons.cancel'),
-                        backgroundColor: Colors.redAccent,
-                        textColor: Colors.white,
-                      ),
-                    ),
-                  ],
+                  ),
                 ),
-              )
-            ]),
+                Padding(
+                  padding: const EdgeInsets.all(8.0),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.all(2.0),
+                        child: DialogActionButton(
+                          onPressed: () async {
+                            Navigator.of(context).pop(
+                              NewGameParameters(
+                                startPositionFen:
+                                    _positionController.currentPosition,
+                                playerHasWhite: _playerHasWhite,
+                              ),
+                            );
+                          },
+                          textContent: I18nText('buttons.ok'),
+                          backgroundColor: Colors.greenAccent,
+                          textColor: Colors.white,
+                        ),
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.all(2.0),
+                        child: DialogActionButton(
+                          onPressed: () {
+                            Navigator.of(context).pop(null);
+                          },
+                          textContent: I18nText('buttons.cancel'),
+                          backgroundColor: Colors.redAccent,
+                          textColor: Colors.white,
+                        ),
+                      ),
+                    ],
+                  ),
+                )
+              ]),
+            ),
           ),
         ),
       ),
