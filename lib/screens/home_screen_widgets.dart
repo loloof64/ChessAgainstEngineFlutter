@@ -378,7 +378,10 @@ class HomePageHistoryZone extends StatelessWidget {
   Widget build(BuildContext context) {
     return Expanded(
       child: LayoutBuilder(builder: (ctx2, constraints2) {
-        final fontSize = constraints2.biggest.shortestSide * 0.09;
+        double fontSize = constraints2.biggest.shortestSide * 0.09;
+        if (fontSize < 25) {
+          fontSize = 25;
+        }
         return ChessHistory(
           scrollController: scrollController,
           requestGotoFirst: onGotoFirstRequest,
