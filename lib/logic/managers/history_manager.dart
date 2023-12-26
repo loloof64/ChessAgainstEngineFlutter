@@ -84,6 +84,9 @@ class HistoryManager {
   }
 
   void gotoPrevious() {
+    if (_selectedHistoryNode == null) {
+      return;
+    }
     var previousNode = _gameHistoryTree;
     var newSelectedNode = previousNode;
     if (previousNode != null) {
