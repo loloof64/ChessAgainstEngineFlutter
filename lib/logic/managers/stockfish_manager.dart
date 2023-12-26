@@ -3,6 +3,19 @@ import 'dart:async';
 import 'package:stockfish_chess_engine/stockfish.dart';
 import 'package:stockfish_chess_engine/stockfish_state.dart';
 
+class SkillLevel {
+  int defaultLevel;
+  int currentLevel;
+  int minLevel;
+  int maxLevel;
+
+  SkillLevel(
+      {required this.defaultLevel,
+      required this.currentLevel,
+      required this.minLevel,
+      required this.maxLevel});
+}
+
 class StockfishManager {
   final void Function({
     required int defaultLevel,
@@ -27,6 +40,7 @@ class StockfishManager {
 
   late Stockfish _stockfish;
   late StreamSubscription<String> _stockfishOutputSubsciption;
+  SkillLevel? skillLevel;
 
   StockfishState get state => _stockfish.state.value;
 
@@ -34,6 +48,7 @@ class StockfishManager {
     required int level,
   }) {
     _stockfish.stdin = 'setoption name Skill Level value $level';
+    skillLevel?.currentLevel = level;
   }
 
   void start() async {
@@ -82,6 +97,12 @@ class StockfishManager {
 
         setSkillLevelOption(
           defaultLevel: defaultLevel,
+          minLevel: minLevel,
+          maxLevel: maxLevel,
+        );
+        skillLevel = SkillLevel(
+          defaultLevel: defaultLevel,
+          currentLevel: defaultLevel,
           minLevel: minLevel,
           maxLevel: maxLevel,
         );
