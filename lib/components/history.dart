@@ -17,6 +17,7 @@
 */
 
 import 'package:flutter/material.dart';
+import 'dart:io' show Platform;
 
 class HistoryNavigationButton extends StatelessWidget {
   final double size;
@@ -74,7 +75,7 @@ class ChessHistory extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return LayoutBuilder(builder: (ctx2, constraints) {
-      double commonSize = constraints.maxWidth * 0.20;
+      double commonSize = constraints.maxWidth * (Platform.isAndroid || Platform.isIOS ? 0.20 : 0.10);
       if (commonSize < 25) {
         commonSize = 25;
       }
