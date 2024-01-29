@@ -4,7 +4,6 @@ import 'package:chess_against_engine/logic/managers/game_manager.dart';
 import 'package:chess_against_engine/logic/managers/history_manager.dart';
 import 'package:chess_against_engine/logic/managers/stockfish_manager.dart';
 import 'package:chess/chess.dart' as chess;
-import 'package:chess_against_engine/stores/stockfish_manager.dart';
 import 'package:chess_vectors_flutter/chess_vectors_flutter.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -19,8 +18,6 @@ import '../components/dialog_buttons.dart';
 import '../logic/history_builder.dart' hide File;
 import '../screens/home_screen_widgets.dart';
 import '../screens/new_game_screen.dart';
-
-final stockfishManager = StockfishManagerStore();
 
 class MyHomePage extends StatefulWidget {
   const MyHomePage({Key? key}) : super(key: key);
@@ -40,6 +37,7 @@ class _MyHomePageState extends State<MyHomePage> with WindowListener {
   final ScrollController _historyScrollController =
       ScrollController(initialScrollOffset: 0.0, keepScrollOffset: true);
   BoardArrow? _lastMoveArrow;
+  late StockfishManager _stockfishManager;
   late SharedPreferences _prefs;
   late HistoryManager _historyManager;
   late GameManager _gameManager;
@@ -48,14 +46,12 @@ class _MyHomePageState extends State<MyHomePage> with WindowListener {
   void initState() {
     windowManager.addListener(this);
     _overrideDefaultCloseHandler();
-    stockfishManager.setManager(
-      StockfishManager(
-        setSkillLevelOption: _setSkillLevelOption,
-        unsetSkillLevelOption: _unsetSkillLevelOption,
-        handleReadyOk: _makeComputerMove,
-        handleScoreCp: _handleScoreCp,
-        onBestMove: _processBestMove,
-      ),
+    _stockfishManager = StockfishManager(
+      setSkillLevelOption: _setSkillLevelOption,
+      unsetSkillLevelOption: _unsetSkillLevelOption,
+      handleReadyOk: _makeComputerMove,
+      handleScoreCp: _handleScoreCp,
+      onBestMove: _processBestMove,
     );
     _historyManager = HistoryManager(
       onUpdateChildrenWidgets: _updateHistoryChildrenWidgets,
@@ -94,13 +90,13 @@ class _MyHomePageState extends State<MyHomePage> with WindowListener {
 
   void _doStartStockfish() async {
     setState(() {
-      stockfishManager.manager?.start();
+      _stockfishManager.start();
     });
   }
 
   void _stopStockfish() async {
     setState(() {
-      stockfishManager.manager?.stop();
+      _stockfishManager.stop();
     });
   }
 
@@ -182,7 +178,7 @@ class _MyHomePageState extends State<MyHomePage> with WindowListener {
 
     setState(() {
       _gameManager.allowCpuThinking();
-      stockfishManager.manager?.startEvaluation(
+      _stockfishManager.startEvaluation(
         positionFen: _gameManager.position,
         thinkingTimeMs: _prefs.getDouble('engineThinkingTime') ?? 1000.0,
       );
@@ -295,7 +291,7 @@ class _MyHomePageState extends State<MyHomePage> with WindowListener {
         startPosition: startPosition,
         playerHasWhite: playerHasWhite,
       );
-      stockfishManager.manager?.startEvaluation(
+      _stockfishManager.startEvaluation(
         positionFen: _gameManager.position,
         thinkingTimeMs: _prefs.getDouble('engineThinkingTime') ?? 1000.0,
       );
@@ -577,7 +573,7 @@ class _MyHomePageState extends State<MyHomePage> with WindowListener {
   Widget build(BuildContext context) {
     Color stockfishStatusColor;
 
-    switch (stockfishManager.manager?.state ?? StockfishState.disposed) {
+    switch (_stockfishManager.state) {
       case StockfishState.disposed:
         stockfishStatusColor = Colors.black;
         break;
@@ -695,7 +691,7 @@ class _MyHomePageState extends State<MyHomePage> with WindowListener {
               _scoreVisible = newValue ?? false;
             });
             if (_scoreVisible) {
-               stockfishManager.manager?.startEvaluation(
+              _stockfishManager.startEvaluation(
                 positionFen: _gameManager.position,
                 thinkingTimeMs:
                     _prefs.getDouble('engineThinkingTime') ?? 1000.0,
@@ -706,7 +702,7 @@ class _MyHomePageState extends State<MyHomePage> with WindowListener {
         onSkillLevelChanged: (newValue) {
           setState(() {
             _skillLevel = newValue.toInt();
-            stockfishManager.manager?.setSkillLevel(level: _skillLevel);
+            _stockfishManager.setSkillLevel(level: _skillLevel);
           });
         },
         onGotoFirstRequest: _requestGotoFirst,
