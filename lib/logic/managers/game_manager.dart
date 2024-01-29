@@ -1,38 +1,111 @@
 import 'package:chess/chess.dart' as chess;
-import 'package:chess_against_engine/logic/history_builder.dart';
-import 'package:chess_against_engine/logic/utils.dart';
+import 'package:equatable/equatable.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_i18n/flutter_i18n.dart';
 import 'package:simple_chess_board/simple_chess_board.dart';
 
-const emptyPosition = '8/8/8/8/8/8/8/8 w - - 0 1';
+import 'package:chess_against_engine/logic/history_builder.dart';
+import 'package:chess_against_engine/logic/utils.dart';
 
-class GameManager {
+const emptyPosition = '4k3/8/8/8/8/8/8/4K3 w - - 0 1';
+
+class GameState extends Equatable {
+  final String positionFen;
+  final bool whiteTurn;
+  final bool gameOver;
+  final PlayerType whitePlayerType;
+  final PlayerType blackPlayerType;
+  final bool cpuCanPlay;
+  final String startPosition;
+  final bool gameStart;
+  final bool gameInProgress;
+  final bool engineThinking;
+  final double score;
+
+  const GameState({
+    required this.positionFen,
+    required this.whiteTurn,
+    required this.gameOver,
+    required this.whitePlayerType,
+    required this.blackPlayerType,
+    required this.cpuCanPlay,
+    required this.startPosition,
+    required this.gameStart,
+    required this.gameInProgress,
+    required this.engineThinking,
+    required this.score,
+  });
+
+  @override
+  List<Object?> get props => [
+        positionFen,
+        whiteTurn,
+        gameOver,
+        whitePlayerType,
+        blackPlayerType,
+        cpuCanPlay,
+        startPosition,
+        gameStart,
+        gameInProgress,
+        engineThinking,
+        score,
+      ];
+
+  GameState copyWith({
+    String? positionFen,
+    bool? whiteTurn,
+    bool? gameOver,
+    PlayerType? whitePlayerType,
+    PlayerType? blackPlayerType,
+    bool? cpuCanPlay,
+    String? startPosition,
+    bool? gameStart,
+    bool? gameInProgress,
+    bool? engineThinking,
+    double? score,
+  }) {
+    return GameState(
+      positionFen: positionFen ?? this.positionFen,
+      whiteTurn: whiteTurn ?? this.whiteTurn,
+      gameOver: gameOver ?? this.gameOver,
+      whitePlayerType: whitePlayerType ?? this.whitePlayerType,
+      blackPlayerType: blackPlayerType ?? this.blackPlayerType,
+      cpuCanPlay: cpuCanPlay ?? this.cpuCanPlay,
+      startPosition: startPosition ?? this.startPosition,
+      gameStart: gameStart ?? this.gameStart,
+      gameInProgress: gameInProgress ?? this.gameInProgress,
+      engineThinking: engineThinking ?? this.engineThinking,
+      score: score ?? this.score,
+    );
+  }
+}
+
+class GameManager extends ValueNotifier<GameState> {
   chess.Chess _gameLogic = chess.Chess();
-  PlayerType _whitePlayerType = PlayerType.computer;
-  PlayerType _blackPlayerType = PlayerType.computer;
-  bool _cpuCanPlay = false;
-  String _startPosition = chess.Chess.DEFAULT_POSITION;
-  bool _gameStart = false;
-  bool _gameInProgress = false;
-  bool _engineThinking = false;
-  double _score = 0.0;
 
-  GameManager() {
+  GameManager._sharedInstance()
+      : super(
+          const GameState(
+              positionFen: emptyPosition,
+              whiteTurn: true,
+              gameOver: false,
+              whitePlayerType: PlayerType.computer,
+              blackPlayerType: PlayerType.computer,
+              cpuCanPlay: false,
+              startPosition: chess.Chess.DEFAULT_POSITION,
+              gameStart: false,
+              gameInProgress: false,
+              engineThinking: false,
+              score: 0.0),
+        ) {
     _gameLogic.load(emptyPosition);
   }
 
-  bool get isGameOver => _gameLogic.game_over;
-  bool get isGameStart => _gameStart;
-  String get position => _gameLogic.fen;
-  bool get whiteTurn => _gameLogic.turn == chess.Color.WHITE;
-  String get startPosition => _startPosition;
-  bool get cpuCanPlay => _cpuCanPlay;
-  bool get gameInProgress => _gameInProgress;
-  PlayerType get whitePlayerType => _whitePlayerType;
-  PlayerType get blackPlayerType => _blackPlayerType;
-  bool get engineThiking => _engineThinking;
-  double get score => _score;
+  static final GameManager _shared = GameManager._sharedInstance();
+
+  factory GameManager() => _shared;
+
+  GameState get currentState => value;
 
   bool processComputerMove({
     required String from,
@@ -44,14 +117,21 @@ class GameManager {
       'to': to,
       'promotion': promotion,
     });
-    _engineThinking = false;
-    _cpuCanPlay = false;
+    value = value.copyWith(
+      engineThinking: false,
+      cpuCanPlay: false,
+      gameOver: _gameLogic.game_over,
+      whiteTurn: _gameLogic.turn == chess.Color.WHITE,
+      positionFen: _gameLogic.fen,
+    );
+    notifyListeners();
 
     return moveHasBeenMade;
   }
 
   void clearGameStartFlag() {
-    _gameStart = false;
+    value = value.copyWith(gameStart: false);
+    notifyListeners();
   }
 
   bool processPlayerMove({
@@ -64,6 +144,12 @@ class GameManager {
       'to': to,
       'promotion': promotion,
     });
+    value = value.copyWith(
+      gameOver: _gameLogic.game_over,
+      whiteTurn: _gameLogic.turn == chess.Color.WHITE,
+      positionFen: _gameLogic.fen,
+    );
+    notifyListeners();
     return moveHasBeenMade;
   }
 
@@ -71,45 +157,72 @@ class GameManager {
     String startPosition = chess.Chess.DEFAULT_POSITION,
     bool playerHasWhite = true,
   }) {
-    _score = 0.0;
-    _startPosition = startPosition;
-    _whitePlayerType = playerHasWhite ? PlayerType.human : PlayerType.computer;
-    _blackPlayerType = playerHasWhite ? PlayerType.computer : PlayerType.human;
-    _gameStart = true;
-    _gameInProgress = true;
-    _gameLogic = chess.Chess();
-    _gameLogic.load(_startPosition);
+    _gameLogic.load(startPosition);
+    value = value.copyWith(
+      score: 0.0,
+      startPosition: startPosition,
+      whitePlayerType: playerHasWhite ? PlayerType.human : PlayerType.computer,
+      blackPlayerType: playerHasWhite ? PlayerType.computer : PlayerType.human,
+      gameStart: true,
+      gameInProgress: true,
+      positionFen: _gameLogic.fen,
+      whiteTurn: _gameLogic.turn == chess.Color.WHITE,
+      gameOver: _gameLogic.game_over,
+    );
+    notifyListeners();
   }
 
   void stopGame() {
-    _whitePlayerType = PlayerType.computer;
-    _blackPlayerType = PlayerType.computer;
-    _gameInProgress = false;
-    _engineThinking = false;
+    value = value.copyWith(
+      whitePlayerType: PlayerType.computer,
+      blackPlayerType: PlayerType.computer,
+      gameInProgress: false,
+      engineThinking: false,
+    );
+    notifyListeners();
   }
 
   void loadStartPosition() {
     _gameLogic = chess.Chess();
-    _gameLogic.load(_startPosition);
+    _gameLogic.load(value.startPosition);
+    value = value.copyWith(
+      positionFen: _gameLogic.fen,
+      whiteTurn: _gameLogic.turn == chess.Color.WHITE,
+      gameOver: _gameLogic.game_over,
+    );
+    notifyListeners();
   }
 
   void loadPosition(String position) {
     _gameLogic = chess.Chess();
     _gameLogic.load(position);
+    value = value.copyWith(
+      positionFen: _gameLogic.fen,
+      whiteTurn: _gameLogic.turn == chess.Color.WHITE,
+      gameOver: _gameLogic.game_over,
+    );
+    notifyListeners();
   }
 
   void allowCpuThinking() {
-    _engineThinking = true;
-    _cpuCanPlay = true;
+    value = value.copyWith(
+      engineThinking: true,
+      cpuCanPlay: true,
+    );
+    notifyListeners();
   }
 
   void forbidCpuThinking() {
-    _engineThinking = false;
-    _cpuCanPlay = false;
+    value = value.copyWith(
+      engineThinking: false,
+      cpuCanPlay: false,
+    );
+    notifyListeners();
   }
 
   void updateScore(double score) {
-    _score = score;
+    value = value.copyWith(score: score);
+    notifyListeners();
   }
 
   String getLastMoveFan() {
@@ -122,7 +235,7 @@ class GameManager {
     _gameLogic.make_move(lastPlayedMove);
 
     // Move has been played: we need to revert player turn for the SAN.
-    return san.toFan(whiteMove: !whiteTurn);
+    return san.toFan(whiteMove: !value.whiteTurn);
   }
 
   Move getLastMove() {

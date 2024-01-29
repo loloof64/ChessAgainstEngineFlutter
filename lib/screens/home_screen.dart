@@ -40,7 +40,6 @@ class _MyHomePageState extends State<MyHomePage> with WindowListener {
   late StockfishManager _stockfishManager;
   late SharedPreferences _prefs;
   late HistoryManager _historyManager;
-  late GameManager _gameManager;
 
   @override
   void initState() {
@@ -59,14 +58,14 @@ class _MyHomePageState extends State<MyHomePage> with WindowListener {
       onSelectStartPosition: _selectStartPosition,
       isStartMoveNumber: _isStartMoveNumber,
     );
-    _gameManager = GameManager();
     _doStartStockfish();
     _initPreferences();
     super.initState();
   }
 
   bool _isStartMoveNumber(int moveNumber) {
-    return int.parse(_gameManager.startPosition.split(' ')[5]) == moveNumber;
+    return int.parse(GameManager().currentState.startPosition.split(' ')[5]) ==
+        moveNumber;
   }
 
   void _setSkillLevelOption({
@@ -118,30 +117,28 @@ class _MyHomePageState extends State<MyHomePage> with WindowListener {
     required String to,
     required String? promotion,
   }) {
-    if (!_gameManager.cpuCanPlay) return;
-    if (!_gameManager.gameInProgress) return;
+    if (!GameManager().currentState.cpuCanPlay) return;
+    if (!GameManager().currentState.gameInProgress) return;
 
-    setState(() {
-      final moveHasBeenMade = _gameManager.processComputerMove(
-        from: from,
-        to: to,
-        promotion: promotion,
-      );
+    final moveHasBeenMade = GameManager().processComputerMove(
+      from: from,
+      to: to,
+      promotion: promotion,
+    );
 
-      if (!moveHasBeenMade) return;
-    });
+    if (!moveHasBeenMade) return;
 
     setState(() {
       _lastMoveArrow = BoardArrow(from: from, to: to, color: Colors.blueAccent);
       _addMoveToHistory();
-      _gameManager.clearGameStartFlag();
+      GameManager().clearGameStartFlag();
     });
 
-    if (_gameManager.isGameOver) {
-      final gameResultString = _gameManager.getResultString();
+    if (GameManager().currentState.gameOver) {
+      final gameResultString = GameManager().getResultString();
 
       setState(() {
-        _gameManager.stopGame();
+        GameManager().stopGame();
         _historyManager.addResultString(gameResultString);
         _historyManager.gotoLast();
       });
@@ -151,7 +148,7 @@ class _MyHomePageState extends State<MyHomePage> with WindowListener {
           content: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              _gameManager.getGameEndedType(),
+              GameManager().getGameEndedType(),
             ],
           ),
         ),
@@ -169,33 +166,32 @@ class _MyHomePageState extends State<MyHomePage> with WindowListener {
   }
 
   void _makeComputerMove() {
-    if (!_gameManager.gameInProgress) return;
-    final whiteTurn = _gameManager.whiteTurn;
-    final computerTurn =
-        (whiteTurn && _gameManager.whitePlayerType == PlayerType.computer) ||
-            (!whiteTurn && _gameManager.blackPlayerType == PlayerType.computer);
+    if (!GameManager().currentState.gameInProgress) return;
+    final whiteTurn = GameManager().currentState.whiteTurn;
+    final computerTurn = (whiteTurn &&
+            GameManager().currentState.whitePlayerType ==
+                PlayerType.computer) ||
+        (!whiteTurn &&
+            GameManager().currentState.blackPlayerType == PlayerType.computer);
     if (!computerTurn) return;
 
-    setState(() {
-      _gameManager.allowCpuThinking();
-      _stockfishManager.startEvaluation(
-        positionFen: _gameManager.position,
-        thinkingTimeMs: _prefs.getDouble('engineThinkingTime') ?? 1000.0,
-      );
-    });
+    GameManager().allowCpuThinking();
+    _stockfishManager.startEvaluation(
+      positionFen: GameManager().currentState.positionFen,
+      thinkingTimeMs: _prefs.getDouble('engineThinkingTime') ?? 1000.0,
+    );
   }
 
   void _handleScoreCp({required double scoreCp}) {
-    final cpuHasBlack = _gameManager.whitePlayerType == PlayerType.human &&
-        _gameManager.blackPlayerType == PlayerType.computer;
-    final cpuTurnAsBlack = cpuHasBlack && _gameManager.cpuCanPlay;
+    final cpuHasBlack =
+        GameManager().currentState.whitePlayerType == PlayerType.human &&
+            GameManager().currentState.blackPlayerType == PlayerType.computer;
+    final cpuTurnAsBlack = cpuHasBlack && GameManager().currentState.cpuCanPlay;
     var realScore = scoreCp;
     if (cpuTurnAsBlack) {
       realScore *= -1;
     }
-    setState(() {
-      _gameManager.updateScore(realScore);
-    });
+    GameManager().updateScore(realScore);
   }
 
   /*
@@ -205,11 +201,11 @@ class _MyHomePageState extends State<MyHomePage> with WindowListener {
   */
   void _addMoveToHistory() {
     if (_historyManager.currentNode != null) {
-      final whiteMove = _gameManager.whiteTurn;
-      final lastMoveFan = _gameManager.getLastMoveFan();
-      final relatedMove = _gameManager.getLastMove();
-      final gameStart = _gameManager.isGameStart;
-      final position = _gameManager.position;
+      final whiteMove = GameManager().currentState.whiteTurn;
+      final lastMoveFan = GameManager().getLastMoveFan();
+      final relatedMove = GameManager().getLastMove();
+      final gameStart = GameManager().currentState.gameStart;
+      final position = GameManager().currentState.positionFen;
 
       setState(() {
         _lastMoveArrow = BoardArrow(
@@ -229,7 +225,7 @@ class _MyHomePageState extends State<MyHomePage> with WindowListener {
 
   void _tryMakingMove({required ShortMove move}) {
     setState(() {
-      final moveHasBeenMade = _gameManager.processPlayerMove(
+      final moveHasBeenMade = GameManager().processPlayerMove(
         from: move.from,
         to: move.to,
         promotion: move.promotion.map((t) => t.name).toNullable(),
@@ -237,15 +233,15 @@ class _MyHomePageState extends State<MyHomePage> with WindowListener {
       if (moveHasBeenMade) {
         _addMoveToHistory();
       }
-      _gameManager.clearGameStartFlag();
+      GameManager().clearGameStartFlag();
     });
-    if (_gameManager.isGameOver) {
-      final gameResultString = _gameManager.getResultString();
+    if (GameManager().currentState.gameOver) {
+      final gameResultString = GameManager().getResultString();
 
       setState(() {
         _addMoveToHistory();
         _historyManager.addResultString(gameResultString);
-        _gameManager.stopGame();
+        GameManager().stopGame();
       });
 
       ScaffoldMessenger.of(context).showSnackBar(
@@ -253,7 +249,7 @@ class _MyHomePageState extends State<MyHomePage> with WindowListener {
           content: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              _gameManager.getGameEndedType(),
+              GameManager().getGameEndedType(),
             ],
           ),
         ),
@@ -287,12 +283,12 @@ class _MyHomePageState extends State<MyHomePage> with WindowListener {
       final caption = "$moveNumber${whiteTurn ? '.' : '...'}";
       _lastMoveArrow = null;
       _historyManager.newGame(caption);
-      _gameManager.startNewGame(
+      GameManager().startNewGame(
         startPosition: startPosition,
         playerHasWhite: playerHasWhite,
       );
       _stockfishManager.startEvaluation(
-        positionFen: _gameManager.position,
+        positionFen: GameManager().currentState.positionFen,
         thinkingTimeMs: _prefs.getDouble('engineThinkingTime') ?? 1000.0,
       );
     });
@@ -314,7 +310,8 @@ class _MyHomePageState extends State<MyHomePage> with WindowListener {
 
   Future<PieceType?> _showPromotionDialog(BuildContext context) {
     const pieceSize = 60.0;
-    final whiteTurn = _gameManager.position.split(' ')[1] == 'w';
+    final whiteTurn =
+        GameManager().currentState.positionFen.split(' ')[1] == 'w';
     return showDialog<PieceType>(
         context: context,
         builder: (_) {
@@ -357,7 +354,7 @@ class _MyHomePageState extends State<MyHomePage> with WindowListener {
 
   void _updateHistoryChildrenWidgets() {
     setState(() {
-      if (_gameManager.gameInProgress) {
+      if (GameManager().currentState.gameInProgress) {
         _historyScrollController.animateTo(
           _historyScrollController.position.maxScrollExtent,
           duration: const Duration(milliseconds: 50),
@@ -383,7 +380,7 @@ class _MyHomePageState extends State<MyHomePage> with WindowListener {
   }
 
   void _purposeStopGame() {
-    if (!_gameManager.gameInProgress) return;
+    if (!GameManager().currentState.gameInProgress) return;
     showDialog(
         context: context,
         builder: (BuildContext innerCtx) {
@@ -428,7 +425,7 @@ class _MyHomePageState extends State<MyHomePage> with WindowListener {
         _historyManager.selectCurrentNode();
       }
       _historyManager.addResultString('*');
-      _gameManager.stopGame();
+      GameManager().stopGame();
     });
     setState(() {
       _historyManager.updateChildrenWidgets();
@@ -444,7 +441,7 @@ class _MyHomePageState extends State<MyHomePage> with WindowListener {
   }
 
   Future<void> _goToNewGameOptionsPage() async {
-    String editPosition = _gameManager.position;
+    String editPosition = GameManager().currentState.positionFen;
     final editPositionEmpty = editPosition.split(' ')[0] == '8/8/8/8/8/8/8/8';
     if (editPositionEmpty) editPosition = chess.Chess.DEFAULT_POSITION;
     final gameParameters = await Navigator.of(context).pushNamed(
@@ -460,7 +457,8 @@ class _MyHomePageState extends State<MyHomePage> with WindowListener {
   }
 
   void _purposeRestartGame() {
-    final isEmptyPosition = _gameManager.position == emptyPosition;
+    final isEmptyPosition =
+        GameManager().currentState.positionFen == emptyPosition;
     if (isEmptyPosition) {
       _goToNewGameOptionsPage();
       return;
@@ -499,11 +497,11 @@ class _MyHomePageState extends State<MyHomePage> with WindowListener {
   }
 
   void _requestGotoFirst() {
-    if (_gameManager.gameInProgress) return;
+    if (GameManager().currentState.gameInProgress) return;
     setState(() {
       _lastMoveArrow = null;
       _historyManager.gotoFirst();
-      _gameManager.loadStartPosition();
+      GameManager().loadStartPosition();
       _historyManager.updateChildrenWidgets();
     });
   }
@@ -511,7 +509,7 @@ class _MyHomePageState extends State<MyHomePage> with WindowListener {
   void _selectStartPosition() {
     setState(() {
       _lastMoveArrow = null;
-      _gameManager.loadStartPosition();
+      GameManager().loadStartPosition();
     });
   }
 
@@ -526,33 +524,33 @@ class _MyHomePageState extends State<MyHomePage> with WindowListener {
         to: to,
         color: Colors.blueAccent,
       );
-      _gameManager.loadPosition(position);
+      GameManager().loadPosition(position);
     });
   }
 
   void _requestGotoPrevious() {
-    if (_gameManager.gameInProgress) return;
+    if (GameManager().currentState.gameInProgress) return;
     setState(() {
       _historyManager.gotoPrevious();
     });
   }
 
   void _requestGotoNext() {
-    if (_gameManager.gameInProgress) return;
+    if (GameManager().currentState.gameInProgress) return;
     setState(() {
       _historyManager.gotoNext();
     });
   }
 
   void _requestGotoLast() {
-    if (_gameManager.gameInProgress) return;
+    if (GameManager().currentState.gameInProgress) return;
     setState(() {
       _historyManager.gotoLast();
     });
   }
 
   Future<void> _accessSettings() async {
-    if (_gameManager.gameInProgress) return;
+    if (GameManager().currentState.gameInProgress) return;
     var success = await Navigator.of(context).pushNamed('/settings');
     if (success == true) {
       if (!mounted) return;
@@ -666,49 +664,54 @@ class _MyHomePageState extends State<MyHomePage> with WindowListener {
             }),
         ],
       ),
-      body: HomePageBody(
-        isLandscape: isLandscape,
-        lastMoveToHighlight: _lastMoveArrow,
-        engineIsThinking: _gameManager.engineThiking,
-        gameInProgress: _gameManager.gameInProgress,
-        scoreVisible: _scoreVisible,
-        skillLevelEditable: _skillLevelEditable,
-        skillLevel: _skillLevel,
-        skillLevelMin: _skillLevelMin,
-        skillLevelMax: _skillLevelMax,
-        score: _gameManager.score,
-        positionFen: _gameManager.position,
-        orientation: _orientation,
-        whitePlayerType: _gameManager.whitePlayerType,
-        blackPlayerType: _gameManager.blackPlayerType,
-        historyElementsTree: _historyManager.elementsTree,
-        scrollController: _historyScrollController,
-        onMove: _tryMakingMove,
-        onPromote: _handlePromotion,
-        onScoreVisibleStatusChanged: (newValue) {
-          if (_gameManager.gameInProgress) {
-            setState(() {
-              _scoreVisible = newValue ?? false;
-            });
-            if (_scoreVisible) {
-              _stockfishManager.startEvaluation(
-                positionFen: _gameManager.position,
-                thinkingTimeMs:
-                    _prefs.getDouble('engineThinkingTime') ?? 1000.0,
-              );
-            }
-          }
+      body: ValueListenableBuilder(
+        valueListenable: GameManager(),
+        builder: (BuildContext context, GameState gameState, Widget? child) {
+          return HomePageBody(
+            isLandscape: isLandscape,
+            lastMoveToHighlight: _lastMoveArrow,
+            engineIsThinking: gameState.engineThinking,
+            gameInProgress: gameState.gameInProgress,
+            scoreVisible: _scoreVisible,
+            skillLevelEditable: _skillLevelEditable,
+            skillLevel: _skillLevel,
+            skillLevelMin: _skillLevelMin,
+            skillLevelMax: _skillLevelMax,
+            score: gameState.score,
+            positionFen: gameState.positionFen,
+            orientation: _orientation,
+            whitePlayerType: gameState.whitePlayerType,
+            blackPlayerType: gameState.blackPlayerType,
+            historyElementsTree: _historyManager.elementsTree,
+            scrollController: _historyScrollController,
+            onMove: _tryMakingMove,
+            onPromote: _handlePromotion,
+            onScoreVisibleStatusChanged: (newValue) {
+              if (gameState.gameInProgress) {
+                setState(() {
+                  _scoreVisible = newValue ?? false;
+                });
+                if (_scoreVisible) {
+                  _stockfishManager.startEvaluation(
+                    positionFen: gameState.positionFen,
+                    thinkingTimeMs:
+                        _prefs.getDouble('engineThinkingTime') ?? 1000.0,
+                  );
+                }
+              }
+            },
+            onSkillLevelChanged: (newValue) {
+              setState(() {
+                _skillLevel = newValue.toInt();
+                _stockfishManager.setSkillLevel(level: _skillLevel);
+              });
+            },
+            onGotoFirstRequest: _requestGotoFirst,
+            onGotoPreviousRequest: _requestGotoPrevious,
+            onGotoNextRequest: _requestGotoNext,
+            onGotoLastRequest: _requestGotoLast,
+          );
         },
-        onSkillLevelChanged: (newValue) {
-          setState(() {
-            _skillLevel = newValue.toInt();
-            _stockfishManager.setSkillLevel(level: _skillLevel);
-          });
-        },
-        onGotoFirstRequest: _requestGotoFirst,
-        onGotoPreviousRequest: _requestGotoPrevious,
-        onGotoNextRequest: _requestGotoNext,
-        onGotoLastRequest: _requestGotoLast,
       ),
     );
   }
