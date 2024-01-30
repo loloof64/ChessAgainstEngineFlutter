@@ -39,12 +39,15 @@ class _MyHomePageState extends State<MyHomePage> with WindowListener {
   BoardArrow? _lastMoveArrow;
   late StockfishManager _stockfishManager;
   late SharedPreferences _prefs;
-  late HistoryManager _historyManager;
 
   @override
   void initState() {
     windowManager.addListener(this);
     _overrideDefaultCloseHandler();
+    HistoryManager().addPositionSelectedCallback(_selectPosition);
+    HistoryManager().addStartPositionSelectedCallback(_selectStartPosition);
+    HistoryManager()
+        .addUpdateChildrenWidgetsCallback(_updateHistoryChildrenWidgets);
     _stockfishManager = StockfishManager(
       setSkillLevelOption: _setSkillLevelOption,
       unsetSkillLevelOption: _unsetSkillLevelOption,
@@ -52,20 +55,9 @@ class _MyHomePageState extends State<MyHomePage> with WindowListener {
       handleScoreCp: _handleScoreCp,
       onBestMove: _processBestMove,
     );
-    _historyManager = HistoryManager(
-      onUpdateChildrenWidgets: _updateHistoryChildrenWidgets,
-      onPositionSelected: _selectPosition,
-      onSelectStartPosition: _selectStartPosition,
-      isStartMoveNumber: _isStartMoveNumber,
-    );
     _doStartStockfish();
     _initPreferences();
     super.initState();
-  }
-
-  bool _isStartMoveNumber(int moveNumber) {
-    return int.parse(GameManager().currentState.startPosition.split(' ')[5]) ==
-        moveNumber;
   }
 
   void _setSkillLevelOption({
@@ -102,6 +94,10 @@ class _MyHomePageState extends State<MyHomePage> with WindowListener {
   @override
   void dispose() {
     _stopStockfish();
+    HistoryManager().removePositionSelectedCallback(_selectPosition);
+    HistoryManager().removeStartPositionSelectedCallback(_selectStartPosition);
+    HistoryManager()
+        .removeUpdateChildrenWidgetsCallback(_updateHistoryChildrenWidgets);
     super.dispose();
   }
 
@@ -130,18 +126,16 @@ class _MyHomePageState extends State<MyHomePage> with WindowListener {
 
     setState(() {
       _lastMoveArrow = BoardArrow(from: from, to: to, color: Colors.blueAccent);
-      _addMoveToHistory();
-      GameManager().clearGameStartFlag();
     });
+    _addMoveToHistory();
+    GameManager().clearGameStartFlag();
 
     if (GameManager().currentState.gameOver) {
       final gameResultString = GameManager().getResultString();
 
-      setState(() {
-        GameManager().stopGame();
-        _historyManager.addResultString(gameResultString);
-        _historyManager.gotoLast();
-      });
+      GameManager().stopGame();
+      HistoryManager().addResultString(gameResultString);
+      HistoryManager().gotoLast();
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -155,9 +149,7 @@ class _MyHomePageState extends State<MyHomePage> with WindowListener {
       );
     }
 
-    setState(() {
-      _historyManager.updateChildrenWidgets();
-    });
+    HistoryManager().updateChildrenWidgets();
     _makeComputerMove();
   }
 
@@ -200,7 +192,7 @@ class _MyHomePageState extends State<MyHomePage> with WindowListener {
     Do not update state itself.
   */
   void _addMoveToHistory() {
-    if (_historyManager.currentNode != null) {
+    if (HistoryManager().currentNode != null) {
       final whiteMove = GameManager().currentState.whiteTurn;
       final lastMoveFan = GameManager().getLastMoveFan();
       final relatedMove = GameManager().getLastMove();
@@ -212,14 +204,14 @@ class _MyHomePageState extends State<MyHomePage> with WindowListener {
             from: relatedMove.from.toString(),
             to: relatedMove.to.toString(),
             color: Colors.blueAccent);
-        _historyManager.addMove(
-          isWhiteTurnNow: whiteMove,
-          isGameStart: gameStart,
-          lastMoveFan: lastMoveFan,
-          position: position,
-          lastPlayedMove: relatedMove,
-        );
       });
+      HistoryManager().addMove(
+        isWhiteTurnNow: whiteMove,
+        isGameStart: gameStart,
+        lastMoveFan: lastMoveFan,
+        position: position,
+        lastPlayedMove: relatedMove,
+      );
     }
   }
 
@@ -238,11 +230,9 @@ class _MyHomePageState extends State<MyHomePage> with WindowListener {
     if (GameManager().currentState.gameOver) {
       final gameResultString = GameManager().getResultString();
 
-      setState(() {
-        _addMoveToHistory();
-        _historyManager.addResultString(gameResultString);
-        GameManager().stopGame();
-      });
+      _addMoveToHistory();
+      HistoryManager().addResultString(gameResultString);
+      GameManager().stopGame();
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -282,7 +272,7 @@ class _MyHomePageState extends State<MyHomePage> with WindowListener {
       final moveNumber = parts[5];
       final caption = "$moveNumber${whiteTurn ? '.' : '...'}";
       _lastMoveArrow = null;
-      _historyManager.newGame(caption);
+      HistoryManager().newGame(caption);
       GameManager().startNewGame(
         startPosition: startPosition,
         playerHasWhite: playerHasWhite,
@@ -361,10 +351,10 @@ class _MyHomePageState extends State<MyHomePage> with WindowListener {
           curve: Curves.easeIn,
         );
       } else {
-        if (_historyManager.selectedNode != null) {
+        if (HistoryManager().selectedNode != null) {
           var selectedNodeIndex = getHistoryNodeIndex(
-              node: _historyManager.selectedNode!,
-              rootNode: _historyManager.gameHistoryTree!);
+              node: HistoryManager().selectedNode!,
+              rootNode: HistoryManager().gameHistoryTree!);
           var selectedLine = selectedNodeIndex ~/ 6;
           _historyScrollController.animateTo(
             selectedLine * 40.0,
@@ -415,21 +405,17 @@ class _MyHomePageState extends State<MyHomePage> with WindowListener {
   }
 
   void _stopCurrentGame() {
-    setState(() {
-      if (_historyManager.currentNode?.relatedMove != null) {
-        _lastMoveArrow = BoardArrow(
-          from: _historyManager.currentNode!.relatedMove!.from.toString(),
-          to: _historyManager.currentNode!.relatedMove!.to.toString(),
-          color: Colors.blueAccent,
-        );
-        _historyManager.selectCurrentNode();
-      }
-      _historyManager.addResultString('*');
-      GameManager().stopGame();
-    });
-    setState(() {
-      _historyManager.updateChildrenWidgets();
-    });
+    if (HistoryManager().currentNode?.relatedMove != null) {
+      _lastMoveArrow = BoardArrow(
+        from: HistoryManager().currentNode!.relatedMove!.from.toString(),
+        to: HistoryManager().currentNode!.relatedMove!.to.toString(),
+        color: Colors.blueAccent,
+      );
+      HistoryManager().selectCurrentNode();
+    }
+    HistoryManager().addResultString('*');
+    GameManager().stopGame();
+    HistoryManager().updateChildrenWidgets();
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Row(
@@ -500,17 +486,17 @@ class _MyHomePageState extends State<MyHomePage> with WindowListener {
     if (GameManager().currentState.gameInProgress) return;
     setState(() {
       _lastMoveArrow = null;
-      _historyManager.gotoFirst();
-      GameManager().loadStartPosition();
-      _historyManager.updateChildrenWidgets();
     });
+    HistoryManager().gotoFirst();
+    GameManager().loadStartPosition();
+    HistoryManager().updateChildrenWidgets();
   }
 
   void _selectStartPosition() {
     setState(() {
       _lastMoveArrow = null;
-      GameManager().loadStartPosition();
     });
+    GameManager().loadStartPosition();
   }
 
   void _selectPosition({
@@ -524,29 +510,23 @@ class _MyHomePageState extends State<MyHomePage> with WindowListener {
         to: to,
         color: Colors.blueAccent,
       );
-      GameManager().loadPosition(position);
     });
+    GameManager().loadPosition(position);
   }
 
   void _requestGotoPrevious() {
     if (GameManager().currentState.gameInProgress) return;
-    setState(() {
-      _historyManager.gotoPrevious();
-    });
+    HistoryManager().gotoPrevious();
   }
 
   void _requestGotoNext() {
     if (GameManager().currentState.gameInProgress) return;
-    setState(() {
-      _historyManager.gotoNext();
-    });
+    HistoryManager().gotoNext();
   }
 
   void _requestGotoLast() {
     if (GameManager().currentState.gameInProgress) return;
-    setState(() {
-      _historyManager.gotoLast();
-    });
+    HistoryManager().gotoLast();
   }
 
   Future<void> _accessSettings() async {
@@ -682,7 +662,7 @@ class _MyHomePageState extends State<MyHomePage> with WindowListener {
             orientation: _orientation,
             whitePlayerType: gameState.whitePlayerType,
             blackPlayerType: gameState.blackPlayerType,
-            historyElementsTree: _historyManager.elementsTree,
+            historyElementsTree: HistoryManager().elementsTree,
             scrollController: _historyScrollController,
             onMove: _tryMakingMove,
             onPromote: _handlePromotion,

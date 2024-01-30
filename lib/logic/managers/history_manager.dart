@@ -1,36 +1,101 @@
+import 'package:chess_against_engine/logic/managers/game_manager.dart';
+import 'package:flutter/material.dart';
+
 import '../../logic/history_builder.dart';
 
-class HistoryManager {
-  final void Function() onUpdateChildrenWidgets;
-  final void Function({
-    required String from,
-    required String to,
-    required String position,
-  }) onPositionSelected;
-  final void Function() onSelectStartPosition;
-  final bool Function(int) isStartMoveNumber;
+class HistoryState {
+  final HistoryNode? gameHistoryTree;
+  final HistoryNode? currentGameHistoryNode;
+  final HistoryNode? selectedHistoryNode;
+  final List<HistoryElement> historyElementsTree;
 
-  HistoryManager({
-    required this.onUpdateChildrenWidgets,
-    required this.onPositionSelected,
-    required this.onSelectStartPosition,
-    required this.isStartMoveNumber,
+  HistoryState({
+    this.gameHistoryTree,
+    this.currentGameHistoryNode,
+    this.selectedHistoryNode,
+    required this.historyElementsTree,
   });
 
-  HistoryNode? _gameHistoryTree;
-  HistoryNode? _currentGameHistoryNode;
-  HistoryNode? _selectedHistoryNode;
-  List<HistoryElement> _historyElementsTree = [];
+  HistoryState copyWith({
+    HistoryNode? gameHistoryTree,
+    HistoryNode? currentGameHistoryNode,
+    HistoryNode? selectedHistoryNode,
+    List<HistoryElement>? historyElementsTree,
+  }) {
+    return HistoryState(
+      gameHistoryTree: gameHistoryTree ?? this.gameHistoryTree,
+      currentGameHistoryNode:
+          currentGameHistoryNode ?? this.currentGameHistoryNode,
+      selectedHistoryNode: selectedHistoryNode ?? this.selectedHistoryNode,
+      historyElementsTree: historyElementsTree ?? this.historyElementsTree,
+    );
+  }
+}
 
-  List<HistoryElement> get elementsTree => _historyElementsTree;
-  HistoryNode? get currentNode => _currentGameHistoryNode;
-  HistoryNode? get gameHistoryTree => _currentGameHistoryNode;
-  HistoryNode? get selectedNode => _selectedHistoryNode;
+typedef UpdateChildrenWidgetsCallback = void Function();
+typedef PositionSelectedCallback = void Function({
+  required String from,
+  required String to,
+  required String position,
+});
+typedef StartPositionSelectedCallback = void Function();
+
+class HistoryManager extends ValueNotifier<HistoryState> {
+  final List<UpdateChildrenWidgetsCallback> _updateChildrenCallbacks = [];
+  final List<PositionSelectedCallback> _positionSelectedCallbacks = [];
+  final List<StartPositionSelectedCallback> _startPositionSelectedCallbacks =
+      [];
+
+  HistoryManager._sharedInstance()
+      : super(
+          HistoryState(
+            historyElementsTree: [],
+          ),
+        );
+  static final HistoryManager _shared = HistoryManager._sharedInstance();
+
+  factory HistoryManager() => _shared;
+
+  void addUpdateChildrenWidgetsCallback(
+      UpdateChildrenWidgetsCallback callback) {
+    _updateChildrenCallbacks.add(callback);
+  }
+
+  void addPositionSelectedCallback(PositionSelectedCallback callback) {
+    _positionSelectedCallbacks.add(callback);
+  }
+
+  void addStartPositionSelectedCallback(
+      StartPositionSelectedCallback callback) {
+    _startPositionSelectedCallbacks.add(callback);
+  }
+
+  void removeUpdateChildrenWidgetsCallback(
+      UpdateChildrenWidgetsCallback callback) {
+    _updateChildrenCallbacks.remove(callback);
+  }
+
+  void removePositionSelectedCallback(PositionSelectedCallback callback) {
+    _positionSelectedCallbacks.remove(callback);
+  }
+
+  void removeStartPositionSelectedCallback(
+      StartPositionSelectedCallback callback) {
+    _startPositionSelectedCallbacks.remove(callback);
+  }
+
+  List<HistoryElement> get elementsTree => value.historyElementsTree;
+  HistoryNode? get currentNode => value.currentGameHistoryNode;
+  HistoryNode? get gameHistoryTree => value.currentGameHistoryNode;
+  HistoryNode? get selectedNode => value.selectedHistoryNode;
 
   void newGame(String firstNodeCaption) {
-    _selectedHistoryNode = null;
-    _gameHistoryTree = HistoryNode(caption: firstNodeCaption);
-    _currentGameHistoryNode = _gameHistoryTree;
+    final commonStartNode = HistoryNode(caption: firstNodeCaption);
+    value = value.copyWith(
+      selectedHistoryNode: null,
+      gameHistoryTree: commonStartNode,
+      currentGameHistoryNode: commonStartNode,
+    );
     updateChildrenWidgets();
   }
 
@@ -45,7 +110,7 @@ class HistoryManager {
     required String position,
     required Move lastPlayedMove,
   }) {
-    if (_currentGameHistoryNode != null) {
+    if (value.currentGameHistoryNode != null) {
       /*
       We need to know if it was white move before the move which
       we want to add history node(s).
@@ -53,8 +118,8 @@ class HistoryManager {
       if (!isWhiteTurnNow && !isGameStart) {
         final moveNumberCaption = "${position.split(' ')[5]}.";
         final nextHistoryNode = HistoryNode(caption: moveNumberCaption);
-        _currentGameHistoryNode?.next = nextHistoryNode;
-        _currentGameHistoryNode = nextHistoryNode;
+        value.currentGameHistoryNode?.next = nextHistoryNode;
+        value = value.copyWith(currentGameHistoryNode: nextHistoryNode);
       }
 
       final nextHistoryNode = HistoryNode(
@@ -62,35 +127,37 @@ class HistoryManager {
         fen: position,
         relatedMove: lastPlayedMove,
       );
-      _currentGameHistoryNode?.next = nextHistoryNode;
-      _currentGameHistoryNode = nextHistoryNode;
+      value.currentGameHistoryNode?.next = nextHistoryNode;
+      value = value.copyWith(currentGameHistoryNode: nextHistoryNode);
       updateChildrenWidgets();
     }
   }
 
   void selectCurrentNode() {
-    _selectedHistoryNode = _currentGameHistoryNode;
+    value = value.copyWith(selectedHistoryNode: value.currentGameHistoryNode);
+    notifyListeners();
   }
 
   void addResultString(String resultString) {
     final nextHistoryNode = HistoryNode(caption: resultString);
-    _currentGameHistoryNode?.next = nextHistoryNode;
-    _currentGameHistoryNode = nextHistoryNode;
+    value.currentGameHistoryNode?.next = nextHistoryNode;
+    value = value.copyWith(currentGameHistoryNode: nextHistoryNode);
     updateChildrenWidgets();
   }
 
   void gotoFirst() {
-    _selectedHistoryNode = null;
+    value = value.copyWith(selectedHistoryNode: null);
+    notifyListeners();
   }
 
   void gotoPrevious() {
-    if (_selectedHistoryNode == null) {
+    if (value.selectedHistoryNode == null) {
       return;
     }
-    var previousNode = _gameHistoryTree;
+    var previousNode = value.gameHistoryTree;
     var newSelectedNode = previousNode;
     if (previousNode != null) {
-      while (previousNode?.next != _selectedHistoryNode) {
+      while (previousNode?.next != value.selectedHistoryNode) {
         previousNode = previousNode?.next != null
             ? HistoryNode.from(previousNode!.next!)
             : null;
@@ -109,49 +176,56 @@ class HistoryManager {
             .key;
         final previousMoveNumber =
             int.parse(previousCaption.substring(0, previousCaptionPointIndex));
-        isFirstMoveNumber = isStartMoveNumber(previousMoveNumber);
+        isFirstMoveNumber = _isStartMoveNumber(previousMoveNumber);
       }
       if (isFirstMoveNumber) {
-        _selectedHistoryNode = null;
+        value = value.copyWith(selectedHistoryNode: null);
         updateChildrenWidgets();
-        onSelectStartPosition();
+        for (StartPositionSelectedCallback callback
+            in _startPositionSelectedCallbacks) {
+          callback();
+        }
       } else if (newSelectedNode != null &&
           newSelectedNode.relatedMove != null) {
-        _selectedHistoryNode = newSelectedNode;
+        value = value.copyWith(selectedHistoryNode: newSelectedNode);
         updateChildrenWidgets();
-        onPositionSelected(
-          from: newSelectedNode.relatedMove!.from.toString(),
-          to: newSelectedNode.relatedMove!.to.toString(),
-          position: newSelectedNode.fen!,
-        );
+        for (PositionSelectedCallback callback in _positionSelectedCallbacks) {
+          callback(
+            from: newSelectedNode.relatedMove!.from.toString(),
+            to: newSelectedNode.relatedMove!.to.toString(),
+            position: newSelectedNode.fen!,
+          );
+        }
       }
     }
   }
 
   void gotoNext() {
-    var nextNode = _selectedHistoryNode != null
-        ? _selectedHistoryNode!.next
-        : _gameHistoryTree;
+    var nextNode = value.selectedHistoryNode != null
+        ? value.selectedHistoryNode!.next
+        : value.gameHistoryTree;
     if (nextNode != null) {
       while (nextNode != null && nextNode.relatedMove == null) {
         nextNode = nextNode.next;
       }
       if (nextNode != null && nextNode.relatedMove != null) {
-        _selectedHistoryNode = nextNode;
+        value = value.copyWith(selectedHistoryNode: nextNode);
         updateChildrenWidgets();
-        onPositionSelected(
-          from: nextNode.relatedMove!.from.toString(),
-          to: nextNode.relatedMove!.to.toString(),
-          position: nextNode.fen!,
-        );
+        for (PositionSelectedCallback callback in _positionSelectedCallbacks) {
+          callback(
+            from: nextNode.relatedMove!.from.toString(),
+            to: nextNode.relatedMove!.to.toString(),
+            position: nextNode.fen!,
+          );
+        }
       }
     }
   }
 
   void gotoLast() {
-    var nextNode = _selectedHistoryNode != null
-        ? _selectedHistoryNode!.next
-        : _gameHistoryTree;
+    var nextNode = value.selectedHistoryNode != null
+        ? value.selectedHistoryNode!.next
+        : value.gameHistoryTree;
     var newSelectedNode = nextNode;
 
     while (true) {
@@ -164,35 +238,49 @@ class HistoryManager {
     }
 
     if (newSelectedNode != null && newSelectedNode.relatedMove != null) {
-      _selectedHistoryNode = newSelectedNode;
+      value = value.copyWith(selectedHistoryNode: newSelectedNode);
       updateChildrenWidgets();
-      onPositionSelected(
-        from: newSelectedNode.relatedMove!.from.toString(),
-        to: newSelectedNode.relatedMove!.to.toString(),
-        position: newSelectedNode.fen!,
-      );
+      for (PositionSelectedCallback callback in _positionSelectedCallbacks) {
+        callback(
+          from: newSelectedNode.relatedMove!.from.toString(),
+          to: newSelectedNode.relatedMove!.to.toString(),
+          position: newSelectedNode.fen!,
+        );
+      }
     }
   }
 
   void updateChildrenWidgets() {
-    if (_gameHistoryTree != null) {
-      _historyElementsTree = recursivelyBuildElementsFromHistoryTree(
-          fontSize: 40,
-          selectedHistoryNode: _selectedHistoryNode,
-          tree: _gameHistoryTree!,
-          onHistoryMoveRequested: ({
-            required Move historyMove,
-            required HistoryNode? selectedHistoryNode,
-          }) {
-            _selectedHistoryNode = selectedHistoryNode;
-            updateChildrenWidgets();
-            onPositionSelected(
-              from: historyMove.from.toString(),
-              to: historyMove.to.toString(),
-              position: selectedHistoryNode!.fen!,
-            );
-          });
-      onUpdateChildrenWidgets();
+    if (value.gameHistoryTree != null) {
+      value = value.copyWith(
+        historyElementsTree: recursivelyBuildElementsFromHistoryTree(
+            fontSize: 40,
+            selectedHistoryNode: value.selectedHistoryNode,
+            tree: value.gameHistoryTree!,
+            onHistoryMoveRequested: ({
+              required Move historyMove,
+              required HistoryNode? selectedHistoryNode,
+            }) {
+              value = value.copyWith(selectedHistoryNode: selectedHistoryNode);
+              updateChildrenWidgets();
+              for (PositionSelectedCallback callback
+                  in _positionSelectedCallbacks) {
+                callback(
+                  from: historyMove.from.toString(),
+                  to: historyMove.to.toString(),
+                  position: selectedHistoryNode!.fen!,
+                );
+              }
+            }),
+      );
+      for (UpdateChildrenWidgetsCallback callback in _updateChildrenCallbacks) {
+        callback();
+      }
     }
+  }
+
+  bool _isStartMoveNumber(int moveNumber) {
+    return int.parse(GameManager().currentState.startPosition.split(' ')[5]) ==
+        moveNumber;
   }
 }
