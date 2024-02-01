@@ -294,6 +294,12 @@ class _MyHomePageState extends State<MyHomePage> with WindowListener {
     return promotion;
   }
 
+  void _handlePromotionCommited(
+      {required ShortMove moveDone, required PieceType pieceType}) {
+    moveDone.promotion = pieceType;
+    _tryMakingMove(move: moveDone);
+  }
+
   Future<PieceType?> _showPromotionDialog(BuildContext context) {
     const pieceSize = 60.0;
     final whiteTurn =
@@ -662,6 +668,7 @@ class _MyHomePageState extends State<MyHomePage> with WindowListener {
             scrollController: _historyScrollController,
             onMove: _tryMakingMove,
             onPromote: _handlePromotion,
+            onPromotionCommited: _handlePromotionCommited,
             onScoreVisibleStatusChanged: (newValue) {
               if (gameState.gameInProgress) {
                 setState(() {

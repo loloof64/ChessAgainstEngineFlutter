@@ -24,6 +24,10 @@ class HomePageBody extends StatelessWidget {
   final ScrollController scrollController;
   final void Function({required ShortMove move}) onMove;
   final Future<PieceType?> Function() onPromote;
+  final void Function({
+    required ShortMove moveDone,
+    required PieceType pieceType,
+  }) onPromotionCommited;
   final void Function(bool? newValue) onScoreVisibleStatusChanged;
   final void Function(double newValue) onSkillLevelChanged;
   final void Function() onGotoFirstRequest;
@@ -51,6 +55,7 @@ class HomePageBody extends StatelessWidget {
     required this.scrollController,
     required this.onMove,
     required this.onPromote,
+    required this.onPromotionCommited,
     required this.onScoreVisibleStatusChanged,
     required this.onSkillLevelChanged,
     required this.onGotoFirstRequest,
@@ -81,6 +86,7 @@ class HomePageBody extends StatelessWidget {
                         blackPlayerType: blackPlayerType,
                         onMove: onMove,
                         onPromote: onPromote,
+                        onPromotionCommited: onPromotionCommited,
                       ),
                     ),
                   ),
@@ -121,6 +127,7 @@ class HomePageBody extends StatelessWidget {
                         blackPlayerType: blackPlayerType,
                         onMove: onMove,
                         onPromote: onPromote,
+                        onPromotionCommited: onPromotionCommited,
                       ),
                     ),
                   ),
@@ -160,6 +167,10 @@ class HomePageChessboardZone extends StatelessWidget {
   final PlayerType blackPlayerType;
   final void Function({required ShortMove move}) onMove;
   final Future<PieceType?> Function() onPromote;
+  final void Function({
+    required ShortMove moveDone,
+    required PieceType pieceType,
+  }) onPromotionCommited;
 
   const HomePageChessboardZone({
     super.key,
@@ -171,6 +182,7 @@ class HomePageChessboardZone extends StatelessWidget {
     required this.blackPlayerType,
     required this.onMove,
     required this.onPromote,
+    required this.onPromotionCommited,
   });
 
   @override
@@ -185,7 +197,7 @@ class HomePageChessboardZone extends StatelessWidget {
           blackPlayerType: blackPlayerType,
           onMove: onMove,
           onPromote: onPromote,
-          onPromotionCommited: ({required moveDone, required pieceType}) => {},
+          onPromotionCommited: onPromotionCommited,
           chessBoardColors: ChessBoardColors(),
         ),
         if (engineIsThinking)
