@@ -84,11 +84,14 @@ class NewGameScreenState extends State<NewGameScreen> {
                 SimpleChessBoard(
                   lastMoveToHighlight: null,
                   fen: _positionFen,
-                  orientation: _orientation,
+                  blackSideAtBottom: _orientation == BoardColor.black,
+                  onPromotionCommited: (
+                      {required moveDone, required pieceType}) {},
                   whitePlayerType: PlayerType.computer,
                   blackPlayerType: PlayerType.computer,
                   onMove: ({required move}) {},
                   onPromote: () async => null,
+                  chessBoardColors: ChessBoardColors(),
                 ),
                 Padding(
                   padding: const EdgeInsets.all(8.0),

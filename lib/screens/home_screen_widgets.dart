@@ -178,13 +178,16 @@ class HomePageChessboardZone extends StatelessWidget {
     return Stack(
       children: [
         SimpleChessBoard(
-            lastMoveToHighlight: lastMoveToHighlight,
-            fen: positionFen,
-            orientation: orientation,
-            whitePlayerType: whitePlayerType,
-            blackPlayerType: blackPlayerType,
-            onMove: onMove,
-            onPromote: onPromote),
+          lastMoveToHighlight: lastMoveToHighlight,
+          fen: positionFen,
+          blackSideAtBottom: orientation == BoardColor.black,
+          whitePlayerType: whitePlayerType,
+          blackPlayerType: blackPlayerType,
+          onMove: onMove,
+          onPromote: onPromote,
+          onPromotionCommited: ({required moveDone, required pieceType}) => {},
+          chessBoardColors: ChessBoardColors(),
+        ),
         if (engineIsThinking)
           LayoutBuilder(builder: (ctx2, constaints2) {
             final size = constaints2.biggest.shortestSide;

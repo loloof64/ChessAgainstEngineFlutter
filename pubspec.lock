@@ -205,10 +205,10 @@ packages:
     dependency: "direct main"
     description:
       name: editable_chess_board
-      sha256: dcd81e6e4bf14d7b0dcf67b40263d72601316f65b7b6e65d7ba77522844de046
+      sha256: "3309f80fc503293de0424c30cf1f00e8053ef091bafb1e792cbd4c0af4c7c473"
       url: "https://pub.dev"
     source: hosted
-    version: "0.1.6"
+    version: "0.1.8"
   equatable:
     dependency: "direct main"
     description:
@@ -305,10 +305,10 @@ packages:
     dependency: "direct main"
     description:
       name: fpdart
-      sha256: "2c8078716966f6bb8b723a73ba44842787860d0c8d83c6912e78f3d7b204e444"
+      sha256: "7413acc5a6569a3fe8277928fc7487f3198530f0c4e635d0baef199ea36e8ee9"
       url: "https://pub.dev"
     source: hosted
-    version: "0.2.0"
+    version: "1.1.0"
   frontend_server_client:
     dependency: transitive
     description:
@@ -633,10 +633,10 @@ packages:
     dependency: "direct main"
     description:
       name: simple_chess_board
-      sha256: dec3dcb401348df3e4ae88f56200bb6a4d25015d285fc36023711b46c4bb44ee
+      sha256: b5ed1b2bbe2b46b4e21ea134fd6bfe0d97c94dd200653c2a2dc57575943fa348
       url: "https://pub.dev"
     source: hosted
-    version: "0.3.8"
+    version: "1.3.0"
   sky_engine:
     dependency: transitive
     description: flutter

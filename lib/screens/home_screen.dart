@@ -118,7 +118,10 @@ class _MyHomePageState extends State<MyHomePage> with WindowListener {
     if (!moveHasBeenMade) return;
 
     setState(() {
-      _lastMoveArrow = BoardArrow(from: from, to: to, color: Colors.blueAccent);
+      _lastMoveArrow = BoardArrow(
+        from: from,
+        to: to,
+      );
     });
     _addMoveToHistory();
     GameManager().clearGameStartFlag();
@@ -194,9 +197,9 @@ class _MyHomePageState extends State<MyHomePage> with WindowListener {
 
       setState(() {
         _lastMoveArrow = BoardArrow(
-            from: relatedMove.from.toString(),
-            to: relatedMove.to.toString(),
-            color: Colors.blueAccent);
+          from: relatedMove.from.toString(),
+          to: relatedMove.to.toString(),
+        );
       });
       HistoryManager().addMove(
         isWhiteTurnNow: whiteMove,
@@ -213,7 +216,7 @@ class _MyHomePageState extends State<MyHomePage> with WindowListener {
       final moveHasBeenMade = GameManager().processPlayerMove(
         from: move.from,
         to: move.to,
-        promotion: move.promotion.map((t) => t.name).toNullable(),
+        promotion: move.promotion?.name,
       );
       if (moveHasBeenMade) {
         _addMoveToHistory();
@@ -402,7 +405,6 @@ class _MyHomePageState extends State<MyHomePage> with WindowListener {
       _lastMoveArrow = BoardArrow(
         from: HistoryManager().currentNode!.relatedMove!.from.toString(),
         to: HistoryManager().currentNode!.relatedMove!.to.toString(),
-        color: Colors.blueAccent,
       );
       HistoryManager().selectCurrentNode();
     }
@@ -503,7 +505,6 @@ class _MyHomePageState extends State<MyHomePage> with WindowListener {
       _lastMoveArrow = BoardArrow(
         from: from,
         to: to,
-        color: Colors.blueAccent,
       );
     });
     GameManager().loadPosition(position);
