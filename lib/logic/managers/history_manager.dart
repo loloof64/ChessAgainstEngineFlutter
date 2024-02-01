@@ -30,6 +30,33 @@ class HistoryState {
       historyElementsTree: historyElementsTree ?? this.historyElementsTree,
     );
   }
+
+  HistoryState withClearedGameHistoryTree() {
+    return HistoryState(
+      currentGameHistoryNode: currentGameHistoryNode,
+      selectedHistoryNode: selectedHistoryNode,
+      historyElementsTree: historyElementsTree,
+      gameHistoryTree: null,
+    );
+  }
+
+  HistoryState withClearedCurrentGameHistoryNode() {
+    return HistoryState(
+      gameHistoryTree: gameHistoryTree,
+      selectedHistoryNode: selectedHistoryNode,
+      historyElementsTree: historyElementsTree,
+      currentGameHistoryNode: null,
+    );
+  }
+
+  HistoryState withClearedSelectedHistoryNode() {
+    return HistoryState(
+      gameHistoryTree: gameHistoryTree,
+      historyElementsTree: historyElementsTree,
+      currentGameHistoryNode: currentGameHistoryNode,
+      selectedHistoryNode: null,
+    );
+  }
 }
 
 typedef UpdateChildrenWidgetsCallback = void Function();
@@ -96,6 +123,7 @@ class HistoryManager extends ValueNotifier<HistoryState> {
       gameHistoryTree: commonStartNode,
       currentGameHistoryNode: commonStartNode,
     );
+    value = value.withClearedSelectedHistoryNode();
     updateChildrenWidgets();
   }
 
@@ -146,8 +174,12 @@ class HistoryManager extends ValueNotifier<HistoryState> {
   }
 
   void gotoFirst() {
-    value = value.copyWith(selectedHistoryNode: null);
-    notifyListeners();
+    value = value.withClearedSelectedHistoryNode();
+    updateChildrenWidgets();
+    for (StartPositionSelectedCallback callback
+        in _startPositionSelectedCallbacks) {
+      callback();
+    }
   }
 
   void gotoPrevious() {
@@ -179,7 +211,7 @@ class HistoryManager extends ValueNotifier<HistoryState> {
         isFirstMoveNumber = _isStartMoveNumber(previousMoveNumber);
       }
       if (isFirstMoveNumber) {
-        value = value.copyWith(selectedHistoryNode: null);
+        value = value.withClearedSelectedHistoryNode();
         updateChildrenWidgets();
         for (StartPositionSelectedCallback callback
             in _startPositionSelectedCallbacks) {

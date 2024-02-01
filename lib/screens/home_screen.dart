@@ -493,6 +493,7 @@ class _MyHomePageState extends State<MyHomePage> with WindowListener {
   }
 
   void _selectStartPosition() {
+    if (GameManager().currentState.gameInProgress) return;
     setState(() {
       _lastMoveArrow = null;
     });
@@ -504,6 +505,7 @@ class _MyHomePageState extends State<MyHomePage> with WindowListener {
     required String to,
     required String position,
   }) {
+    if (GameManager().currentState.gameInProgress) return;
     setState(() {
       _lastMoveArrow = BoardArrow(
         from: from,
