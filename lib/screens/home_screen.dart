@@ -268,6 +268,10 @@ class _MyHomePageState extends State<MyHomePage> with WindowListener {
       final moveNumber = parts[5];
       final caption = "$moveNumber${whiteTurn ? '.' : '...'}";
       _lastMoveArrow = null;
+      final engineLevel = _getPreferencesLevel();
+      if (engineLevel != null) {
+        StockfishManager().setSkillLevel(level: engineLevel);
+      }
       HistoryManager().newGame(caption);
       GameManager().startNewGame(
         startPosition: startPosition,
@@ -279,6 +283,10 @@ class _MyHomePageState extends State<MyHomePage> with WindowListener {
       );
     });
     _makeComputerMove();
+  }
+
+  int? _getPreferencesLevel() {
+    return _prefs.getInt('engineSkillLevelCurrent');
   }
 
   void _toggleBoardOrientation() {
