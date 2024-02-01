@@ -37,7 +37,6 @@ class _MyHomePageState extends State<MyHomePage> with WindowListener {
   final ScrollController _historyScrollController =
       ScrollController(initialScrollOffset: 0.0, keepScrollOffset: true);
   BoardArrow? _lastMoveArrow;
-  late StockfishManager _stockfishManager;
   late SharedPreferences _prefs;
 
   @override
@@ -48,13 +47,11 @@ class _MyHomePageState extends State<MyHomePage> with WindowListener {
     HistoryManager().addStartPositionSelectedCallback(_selectStartPosition);
     HistoryManager()
         .addUpdateChildrenWidgetsCallback(_updateHistoryChildrenWidgets);
-    _stockfishManager = StockfishManager(
-      setSkillLevelOption: _setSkillLevelOption,
-      unsetSkillLevelOption: _unsetSkillLevelOption,
-      handleReadyOk: _makeComputerMove,
-      handleScoreCp: _handleScoreCp,
-      onBestMove: _processBestMove,
-    );
+    StockfishManager().addSetSkillLevelOptionCallback(_setSkillLevelOption);
+    StockfishManager().addUnsetSkillLevelOptionCallback(_unsetSkillLevelOption);
+    StockfishManager().addHandleReadyOkCallback(_makeComputerMove);
+    StockfishManager().addHandleScoreCpCallback(_handleScoreCp);
+    StockfishManager().addBestMoveCallback(_processBestMove);
     _doStartStockfish();
     _initPreferences();
     super.initState();
@@ -80,15 +77,11 @@ class _MyHomePageState extends State<MyHomePage> with WindowListener {
   }
 
   void _doStartStockfish() async {
-    setState(() {
-      _stockfishManager.start();
-    });
+    StockfishManager().start();
   }
 
   void _stopStockfish() async {
-    setState(() {
-      _stockfishManager.stop();
-    });
+    StockfishManager().stop();
   }
 
   @override
@@ -168,7 +161,7 @@ class _MyHomePageState extends State<MyHomePage> with WindowListener {
     if (!computerTurn) return;
 
     GameManager().allowCpuThinking();
-    _stockfishManager.startEvaluation(
+    StockfishManager().startEvaluation(
       positionFen: GameManager().currentState.positionFen,
       thinkingTimeMs: _prefs.getDouble('engineThinkingTime') ?? 1000.0,
     );
@@ -277,7 +270,7 @@ class _MyHomePageState extends State<MyHomePage> with WindowListener {
         startPosition: startPosition,
         playerHasWhite: playerHasWhite,
       );
-      _stockfishManager.startEvaluation(
+      StockfishManager().startEvaluation(
         positionFen: GameManager().currentState.positionFen,
         thinkingTimeMs: _prefs.getDouble('engineThinkingTime') ?? 1000.0,
       );
@@ -553,7 +546,7 @@ class _MyHomePageState extends State<MyHomePage> with WindowListener {
   Widget build(BuildContext context) {
     Color stockfishStatusColor;
 
-    switch (_stockfishManager.state) {
+    switch (StockfishManager().state) {
       case StockfishState.disposed:
         stockfishStatusColor = Colors.black;
         break;
@@ -674,7 +667,7 @@ class _MyHomePageState extends State<MyHomePage> with WindowListener {
                   _scoreVisible = newValue ?? false;
                 });
                 if (_scoreVisible) {
-                  _stockfishManager.startEvaluation(
+                  StockfishManager().startEvaluation(
                     positionFen: gameState.positionFen,
                     thinkingTimeMs:
                         _prefs.getDouble('engineThinkingTime') ?? 1000.0,
@@ -685,7 +678,7 @@ class _MyHomePageState extends State<MyHomePage> with WindowListener {
             onSkillLevelChanged: (newValue) {
               setState(() {
                 _skillLevel = newValue.toInt();
-                _stockfishManager.setSkillLevel(level: _skillLevel);
+                StockfishManager().setSkillLevel(level: _skillLevel);
               });
             },
             onGotoFirstRequest: _requestGotoFirst,

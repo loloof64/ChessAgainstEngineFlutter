@@ -1,54 +1,157 @@
 import 'dart:async';
 
+import 'package:equatable/equatable.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
 import 'package:stockfish_chess_engine/stockfish.dart';
 import 'package:stockfish_chess_engine/stockfish_state.dart';
 
-class SkillLevel {
-  int defaultLevel;
-  int currentLevel;
-  int minLevel;
-  int maxLevel;
+class SkillLevel extends Equatable {
+  final int defaultLevel;
+  final int currentLevel;
+  final int minLevel;
+  final int maxLevel;
 
-  SkillLevel(
-      {required this.defaultLevel,
-      required this.currentLevel,
-      required this.minLevel,
-      required this.maxLevel});
+  const SkillLevel({
+    required this.defaultLevel,
+    required this.currentLevel,
+    required this.minLevel,
+    required this.maxLevel,
+  });
+
+  @override
+  List<Object?> get props => [defaultLevel, currentLevel, minLevel, maxLevel];
+
+  SkillLevel copyWith({
+    int? defaultLevel,
+    int? currentLevel,
+    int? minLevel,
+    int? maxLevel,
+  }) {
+    return SkillLevel(
+      defaultLevel: defaultLevel ?? this.defaultLevel,
+      currentLevel: currentLevel ?? this.currentLevel,
+      minLevel: minLevel ?? this.minLevel,
+      maxLevel: maxLevel ?? this.maxLevel,
+    );
+  }
 }
 
-class StockfishManager {
-  final void Function({
-    required int defaultLevel,
-    required int minLevel,
-    required int maxLevel,
-  }) setSkillLevelOption;
-  final void Function() unsetSkillLevelOption;
-  final void Function() handleReadyOk;
-  final void Function({required double scoreCp}) handleScoreCp;
-  final void Function(
-      {required String from,
-      required String to,
-      required String? promotion}) onBestMove;
+class StockfishManagerState extends Equatable {
+  final SkillLevel? skillLevel;
+  final StockfishState engineState;
 
-  StockfishManager({
-    required this.setSkillLevelOption,
-    required this.unsetSkillLevelOption,
-    required this.handleReadyOk,
-    required this.handleScoreCp,
-    required this.onBestMove,
+  const StockfishManagerState({
+    this.skillLevel,
+    required this.engineState,
   });
+
+  @override
+  List<Object?> get props => [skillLevel, engineState];
+
+  StockfishManagerState copyWith({
+    SkillLevel? skillLevel,
+    StockfishState? engineState,
+  }) {
+    return StockfishManagerState(
+      skillLevel: skillLevel ?? this.skillLevel,
+      engineState: engineState ?? this.engineState,
+    );
+  }
+
+  StockfishManagerState withClearedSkillLevel() {
+    return StockfishManagerState(
+      skillLevel: null,
+      engineState: engineState,
+    );
+  }
+}
+
+typedef SetSkillLevelOptionCallback = void Function({
+  required int defaultLevel,
+  required int minLevel,
+  required int maxLevel,
+});
+typedef UnsetSkillLevelOptionCallback = void Function();
+typedef HandleReadyOkCallback = void Function();
+typedef HandleScoreCpCallback = void Function({required double scoreCp});
+typedef BestMoveCallback = void Function({
+  required String from,
+  required String to,
+  required String? promotion,
+});
+
+class StockfishManager extends ValueNotifier<StockfishManagerState> {
+  final List<SetSkillLevelOptionCallback> _setSkillLevelOptionCallbacks = [];
+  final List<UnsetSkillLevelOptionCallback> _unsetSkillLevelOptionCallbacks =
+      [];
+  final List<HandleReadyOkCallback> _handleReadyOkCallbacks = [];
+  final List<HandleScoreCpCallback> _handleScoreCpCallbacks = [];
+  final List<BestMoveCallback> _bestMoveCallbacks = [];
+
+  StockfishManager._sharedInstance()
+      : super(const StockfishManagerState(
+          skillLevel: null,
+          engineState: StockfishState.starting,
+        ));
+  static final StockfishManager _shared = StockfishManager._sharedInstance();
+
+  factory StockfishManager() => _shared;
+
+  void addSetSkillLevelOptionCallback(SetSkillLevelOptionCallback callback) {
+    _setSkillLevelOptionCallbacks.add(callback);
+  }
+
+  void addUnsetSkillLevelOptionCallback(
+      UnsetSkillLevelOptionCallback callback) {
+    _unsetSkillLevelOptionCallbacks.add(callback);
+  }
+
+  void addHandleReadyOkCallback(HandleReadyOkCallback callback) {
+    _handleReadyOkCallbacks.add(callback);
+  }
+
+  void addHandleScoreCpCallback(HandleScoreCpCallback callback) {
+    _handleScoreCpCallbacks.add(callback);
+  }
+
+  void addBestMoveCallback(BestMoveCallback callback) {
+    _bestMoveCallbacks.add(callback);
+  }
+
+  void removeSetSkillLevelOptionCallback(SetSkillLevelOptionCallback callback) {
+    _setSkillLevelOptionCallbacks.remove(callback);
+  }
+
+  void removeUnsetSkillLevelOptionCallback(
+      UnsetSkillLevelOptionCallback callback) {
+    _unsetSkillLevelOptionCallbacks.remove(callback);
+  }
+
+  void removeHandleReadyOkCallback(HandleReadyOkCallback callback) {
+    _handleReadyOkCallbacks.remove(callback);
+  }
+
+  void removeHandleScoreCpCallback(HandleScoreCpCallback callback) {
+    _handleScoreCpCallbacks.remove(callback);
+  }
+
+  void removeBestMoveCallback(BestMoveCallback callback) {
+    _bestMoveCallbacks.remove(callback);
+  }
 
   late Stockfish _stockfish;
   late StreamSubscription<String> _stockfishOutputSubsciption;
-  SkillLevel? skillLevel;
 
-  StockfishState get state => _stockfish.state.value;
+  SkillLevel? get skillLevel => value.skillLevel;
+  StockfishState get state => value.engineState;
 
   void setSkillLevel({
     required int level,
   }) {
     _stockfish.stdin = 'setoption name Skill Level value $level';
-    skillLevel?.currentLevel = level;
+    SkillLevel? newSkillLevel = value.skillLevel?.copyWith(currentLevel: level);
+    value = value.copyWith(skillLevel: newSkillLevel);
   }
 
   void start() async {
@@ -95,19 +198,28 @@ class StockfishManager {
         final minLevel = int.parse(skillLevelPart.group(2)!);
         final maxLevel = int.parse(skillLevelPart.group(3)!);
 
-        setSkillLevelOption(
-          defaultLevel: defaultLevel,
-          minLevel: minLevel,
-          maxLevel: maxLevel,
-        );
-        skillLevel = SkillLevel(
-          defaultLevel: defaultLevel,
-          currentLevel: defaultLevel,
-          minLevel: minLevel,
-          maxLevel: maxLevel,
+        for (SetSkillLevelOptionCallback callback
+            in _setSkillLevelOptionCallbacks) {
+          callback(
+            defaultLevel: defaultLevel,
+            minLevel: minLevel,
+            maxLevel: maxLevel,
+          );
+        }
+
+        value = value.copyWith(
+          skillLevel: SkillLevel(
+            defaultLevel: defaultLevel,
+            currentLevel: defaultLevel,
+            minLevel: minLevel,
+            maxLevel: maxLevel,
+          ),
         );
       } else {
-        unsetSkillLevelOption();
+        for (UnsetSkillLevelOptionCallback callback
+            in _unsetSkillLevelOptionCallbacks) {
+          callback();
+        }
       }
     }
     if (message.contains("uciok")) {
@@ -115,7 +227,9 @@ class StockfishManager {
       return;
     }
     if (message.contains("readyok")) {
-      handleReadyOk();
+      for (HandleReadyOkCallback callback in _handleReadyOkCallbacks) {
+        callback();
+      }
       return;
     }
     if (message.contains("score cp")) {
@@ -124,7 +238,9 @@ class StockfishManager {
           .map((e) => e.group(1))
           .map((e) => int.parse(e!) / 100.0);
       for (var score in scores) {
-        handleScoreCp(scoreCp: score);
+        for (HandleScoreCpCallback callback in _handleScoreCpCallbacks) {
+          callback(scoreCp: score);
+        }
       }
     }
     if (message.contains("bestmove")) {
@@ -141,11 +257,13 @@ class StockfishManager {
     final to = moveAlgebraic.substring(2, 4);
     final promotion =
         moveAlgebraic.length > 4 ? moveAlgebraic.substring(4, 5) : null;
-    onBestMove(
-      from: from,
-      to: to,
-      promotion: promotion,
-    );
+    for (BestMoveCallback callback in _bestMoveCallbacks) {
+      callback(
+        from: from,
+        to: to,
+        promotion: promotion,
+      );
+    }
   }
 
   Future<void> startEvaluation(
