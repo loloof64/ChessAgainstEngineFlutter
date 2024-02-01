@@ -23,6 +23,7 @@ settings:
     title: "Paramètres"
     engine_thinking_time_label: "Temps réflexion ordinateur"
     engine_thinking_time_value: "{time} s"
+    engine_skill_level: "Niveau de performance"
     saved: "Paramètres sauvegardés"
 new_game:
     title: "Nouvelle partie"

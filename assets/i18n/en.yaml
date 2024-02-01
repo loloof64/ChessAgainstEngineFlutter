@@ -23,6 +23,7 @@ settings:
     title: "Settings"
     engine_thinking_time_label: "Engine thinking time"
     engine_thinking_time_value: "{time} s"
+    engine_skill_level: "Skill level"
     saved: "Settings saved"
 new_game:
     title: "New game"

@@ -23,6 +23,7 @@ settings:
     title: "Configuración"
     engine_thinking_time_label: "Tiempo de pensamiento del motor"
     engine_thinking_time_value: "{time} s"
+    engine_skill_level: "Nivel de habilidad"
     saved: "Configuración guardada"
 new_game:
     title: "Nuevo juego"

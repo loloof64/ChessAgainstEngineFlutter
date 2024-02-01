@@ -35,6 +35,11 @@ class SkillLevel extends Equatable {
       maxLevel: maxLevel ?? this.maxLevel,
     );
   }
+
+  @override
+  String toString() {
+    return 'SkillLevel(defaultLevel: $defaultLevel, currentLevel: $currentLevel, minLevel: $minLevel, maxLevel: $maxLevel)';
+  }
 }
 
 class StockfishManagerState extends Equatable {

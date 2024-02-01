@@ -1,3 +1,4 @@
+import 'package:chess_against_engine/logic/managers/stockfish_manager.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_i18n/flutter_i18n.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -12,12 +13,29 @@ class SettingsPage extends StatefulWidget {
 
 class _SettingsPageState extends State<SettingsPage> {
   double _engineThinkingTimeMs = 1000.0;
+  SkillLevel? _skillLevel;
   late SharedPreferences _prefs;
 
   @override
   void initState() {
-    _initPreferences();
     super.initState();
+    _initPreferences();
+    _tryToSetupSkillLevelIfNotDoneYet();
+  }
+
+  @override
+  void dispose() {
+    super.dispose();
+  }
+
+  void _tryToSetupSkillLevelIfNotDoneYet() {
+    if (_skillLevel != null) return;
+    if (StockfishManager().skillLevel == null) return;
+
+    final currentSkillLevel = StockfishManager().skillLevel!;
+    setState(() {
+      _skillLevel = currentSkillLevel;
+    });
   }
 
   Future<void> _initPreferences() async {
@@ -25,10 +43,34 @@ class _SettingsPageState extends State<SettingsPage> {
     setState(() {
       _engineThinkingTimeMs = _prefs.getDouble('engineThinkingTime') ?? 1000.0;
     });
+    final minLevel = _prefs.getInt('engineSkillLevelMin');
+    final maxLevel = _prefs.getInt('engineSkillLevelMax');
+    final currentLevel = _prefs.getInt('engineSkillLevelCurrent');
+    final defaultLevel = _prefs.getInt('engineSkillLevelDefault');
+
+    if (minLevel != null &&
+        maxLevel != null &&
+        currentLevel != null &&
+        defaultLevel != null) {
+      setState(() {
+        _skillLevel = SkillLevel(
+          defaultLevel: defaultLevel,
+          currentLevel: currentLevel,
+          minLevel: minLevel,
+          maxLevel: maxLevel,
+        );
+      });
+    }
   }
 
   Future<void> _savePreferences() async {
     await _prefs.setDouble('engineThinkingTime', _engineThinkingTimeMs);
+    if (_skillLevel != null) {
+      await _prefs.setInt('engineSkillLevelMin', _skillLevel!.minLevel);
+      await _prefs.setInt('engineSkillLevelMax', _skillLevel!.maxLevel);
+      await _prefs.setInt('engineSkillLevelCurrent', _skillLevel!.currentLevel);
+      await _prefs.setInt('engineSkillLevelDefault', _skillLevel!.defaultLevel);
+    }
   }
 
   @override
@@ -71,6 +113,35 @@ class _SettingsPageState extends State<SettingsPage> {
               ),
             ],
           ),
+          if (_skillLevel != null)
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.all(8.0),
+                  child: I18nText('settings.engine_skill_level'),
+                ),
+                Padding(
+                  padding: const EdgeInsets.all(8.0),
+                  child: Slider(
+                    value: _skillLevel!.currentLevel.toDouble(),
+                    onChanged: (newValue) {
+                      StockfishManager().setSkillLevel(level: newValue.toInt());
+                      setState(() {
+                        _skillLevel = _skillLevel!.copyWith(
+                          currentLevel: newValue.toInt(),
+                        );
+                      });
+                    },
+                    divisions:
+                        (_skillLevel!.maxLevel - _skillLevel!.minLevel) + 1,
+                    min: _skillLevel!.minLevel.toDouble(),
+                    max: _skillLevel!.maxLevel.toDouble(),
+                  ),
+                ),
+                Text(_skillLevel!.currentLevel.toString())
+              ],
+            ),
           Row(
             mainAxisAlignment: MainAxisAlignment.end,
             children: [
