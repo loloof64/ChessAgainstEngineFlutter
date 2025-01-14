@@ -92,6 +92,8 @@ class NewGameScreenState extends State<NewGameScreen> {
                   onMove: ({required move}) {},
                   onPromote: () async => null,
                   chessBoardColors: ChessBoardColors(),
+                  onTap: ({required String cellCoordinate}) {},
+                  cellHighlights: const <String, Color>{},
                 ),
                 Padding(
                   padding: const EdgeInsets.all(8.0),

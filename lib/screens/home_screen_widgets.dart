@@ -199,6 +199,8 @@ class HomePageChessboardZone extends StatelessWidget {
           onPromote: onPromote,
           onPromotionCommited: onPromotionCommited,
           chessBoardColors: ChessBoardColors(),
+          onTap: ({required String cellCoordinate}) {},
+          cellHighlights: const <String, Color>{},
         ),
         if (engineIsThinking)
           LayoutBuilder(builder: (ctx2, constaints2) {
