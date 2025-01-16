@@ -42,7 +42,7 @@ dependencies:
   shared_preferences: ^2.0.13
   fpdart: ^1.1.0
   chess: ^0.8.0
-  editable_chess_board: ^0.1.8
+  editable_chess_board: ^0.2.1
   stockfish_chess_engine: ^0.3.0
   window_manager: ^0.2.7
   equatable: ^2.0.5

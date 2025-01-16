@@ -75,101 +75,114 @@ class _SettingsPageState extends State<SettingsPage> {
 
   @override
   Widget build(BuildContext context) {
+    final isPortrait =
+        MediaQuery.of(context).orientation == Orientation.portrait;
+    final thinkingTimeChildren = <Widget>[
+      Padding(
+        padding: const EdgeInsets.all(8.0),
+        child: I18nText('settings.engine_thinking_time_label'),
+      ),
+      Padding(
+        padding: const EdgeInsets.all(8.0),
+        child: Slider(
+          value: _engineThinkingTimeMs,
+          onChanged: (newValue) {
+            setState(() {
+              _engineThinkingTimeMs = newValue;
+            });
+          },
+          divisions: null,
+          min: 500,
+          max: 5000,
+        ),
+      ),
+      Padding(
+        padding: const EdgeInsets.all(8.0),
+        child: I18nText(
+          'settings.engine_thinking_time_value',
+          translationParams: {
+            'time': (_engineThinkingTimeMs / 1000.0).toStringAsFixed(2),
+          },
+        ),
+      ),
+    ];
+
+    final skillLevelChildren = <Widget>[
+      Padding(
+        padding: const EdgeInsets.all(8.0),
+        child: I18nText('settings.engine_skill_level'),
+      ),
+      Padding(
+        padding: const EdgeInsets.all(8.0),
+        child: Slider(
+          value: _skillLevel!.currentLevel.toDouble(),
+          onChanged: (newValue) {
+            StockfishManager().setSkillLevel(level: newValue.toInt());
+            setState(() {
+              _skillLevel = _skillLevel!.copyWith(
+                currentLevel: newValue.toInt(),
+              );
+            });
+          },
+          divisions: (_skillLevel!.maxLevel - _skillLevel!.minLevel) + 1,
+          min: _skillLevel!.minLevel.toDouble(),
+          max: _skillLevel!.maxLevel.toDouble(),
+        ),
+      ),
+      Text(_skillLevel!.currentLevel.toString())
+    ];
+
+    final actionButtons = <Widget>[
+      Padding(
+        padding: const EdgeInsets.all(8.0),
+        child: DialogActionButton(
+          onPressed: () async {
+            _savePreferences();
+            Navigator.of(context).pop(true);
+          },
+          textContent: I18nText('buttons.ok'),
+          backgroundColor: Colors.greenAccent,
+          textColor: Colors.white,
+        ),
+      ),
+      Padding(
+        padding: const EdgeInsets.all(8.0),
+        child: DialogActionButton(
+          onPressed: () {
+            Navigator.of(context).pop(false);
+          },
+          textContent: I18nText('buttons.cancel'),
+          backgroundColor: Colors.redAccent,
+          textColor: Colors.white,
+        ),
+      ),
+    ];
+
     return Scaffold(
       appBar: AppBar(
         title: I18nText('settings.title'),
       ),
       body: Column(
         children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Padding(
-                padding: const EdgeInsets.all(8.0),
-                child: I18nText('settings.engine_thinking_time_label'),
-              ),
-              Padding(
-                padding: const EdgeInsets.all(8.0),
-                child: Slider(
-                  value: _engineThinkingTimeMs,
-                  onChanged: (newValue) {
-                    setState(() {
-                      _engineThinkingTimeMs = newValue;
-                    });
-                  },
-                  divisions: null,
-                  min: 500,
-                  max: 5000,
+          isPortrait
+              ? Flexible(child: Column(children: thinkingTimeChildren))
+              : Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: thinkingTimeChildren,
                 ),
-              ),
-              Padding(
-                padding: const EdgeInsets.all(8.0),
-                child: I18nText(
-                  'settings.engine_thinking_time_value',
-                  translationParams: {
-                    'time': (_engineThinkingTimeMs / 1000.0).toStringAsFixed(2),
-                  },
-                ),
-              ),
-            ],
-          ),
           if (_skillLevel != null)
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Padding(
-                  padding: const EdgeInsets.all(8.0),
-                  child: I18nText('settings.engine_skill_level'),
-                ),
-                Padding(
-                  padding: const EdgeInsets.all(8.0),
-                  child: Slider(
-                    value: _skillLevel!.currentLevel.toDouble(),
-                    onChanged: (newValue) {
-                      StockfishManager().setSkillLevel(level: newValue.toInt());
-                      setState(() {
-                        _skillLevel = _skillLevel!.copyWith(
-                          currentLevel: newValue.toInt(),
-                        );
-                      });
-                    },
-                    divisions:
-                        (_skillLevel!.maxLevel - _skillLevel!.minLevel) + 1,
-                    min: _skillLevel!.minLevel.toDouble(),
-                    max: _skillLevel!.maxLevel.toDouble(),
+            isPortrait
+                ? Flexible(child: Column(children: skillLevelChildren))
+                : Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: skillLevelChildren,
                   ),
+          isPortrait
+              ? Column(children: actionButtons)
+              : Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: actionButtons,
                 ),
-                Text(_skillLevel!.currentLevel.toString())
-              ],
-            ),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.end,
-            children: [
-              Padding(
-                padding: const EdgeInsets.all(8.0),
-                child: DialogActionButton(
-                  onPressed: () async {
-                    _savePreferences();
-                    Navigator.of(context).pop(true);
-                  },
-                  textContent: I18nText('buttons.ok'),
-                  backgroundColor: Colors.greenAccent,
-                  textColor: Colors.white,
-                ),
-              ),
-              Padding(
-                padding: const EdgeInsets.all(8.0),
-                child: DialogActionButton(
-                  onPressed: () {
-                    Navigator.of(context).pop(false);
-                  },
-                  textContent: I18nText('buttons.cancel'),
-                  backgroundColor: Colors.redAccent,
-                  textColor: Colors.white,
-                ),
-              ),
-            ],
-          ),
         ],
       ),
     );

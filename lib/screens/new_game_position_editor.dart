@@ -33,7 +33,7 @@ class _NewGamePositionEditorScreenState
   }
 
   void _checkPositionAndSendIfValid() {
-    final position = _positionController.currentPosition;
+    final position = _positionController.position;
     final isNotEmpty = position.split(' ')[0] != '8/8/8/8/8/8/8/8';
     final isValid = chess.Chess.validate_fen(position)['valid'] == true;
     if (isNotEmpty && isValid) {
@@ -50,19 +50,24 @@ class _NewGamePositionEditorScreenState
 
   @override
   Widget build(BuildContext context) {
+    final deviceSize = MediaQuery.of(context).size;
+    final isLandscape =
+        MediaQuery.of(context).orientation == Orientation.landscape;
     return Scaffold(
       appBar: AppBar(
         title: I18nText('new_game.title'),
       ),
       body: SizedBox(
-        height: 600.0,
+        height: deviceSize.height * 0.9,
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Expanded(
               child: EditableChessBoard(
-                boardSize: 400.0,
+                boardSize: isLandscape
+                    ? deviceSize.width * 0.45
+                    : deviceSize.height * 0.4,
                 labels: Labels(
                   playerTurnLabel: FlutterI18n.translate(
                     context,
