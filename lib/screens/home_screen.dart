@@ -11,7 +11,7 @@ import 'package:flutter_i18n/flutter_i18n.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:simple_chess_board/models/board_arrow.dart';
 import 'package:simple_chess_board/simple_chess_board.dart';
-import 'package:stockfish_chess_engine/stockfish_state.dart';
+import 'package:stockfish_chess_engine/stockfish_chess_engine_state.dart';
 import 'package:window_manager/window_manager.dart';
 
 import '../components/dialog_buttons.dart';

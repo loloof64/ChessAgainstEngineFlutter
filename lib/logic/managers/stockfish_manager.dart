@@ -3,8 +3,8 @@ import 'dart:async';
 import 'package:equatable/equatable.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
-import 'package:stockfish_chess_engine/stockfish.dart';
-import 'package:stockfish_chess_engine/stockfish_state.dart';
+import 'package:stockfish_chess_engine/stockfish_chess_engine.dart';
+import 'package:stockfish_chess_engine/stockfish_chess_engine_state.dart';
 
 class SkillLevel extends Equatable {
   final int defaultLevel;
