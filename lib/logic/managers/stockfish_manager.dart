@@ -159,7 +159,7 @@ class StockfishManager extends ValueNotifier<StockfishManagerState> {
     value = value.copyWith(skillLevel: newSkillLevel);
   }
 
-  void start() async {
+  Future<void> start() async {
     try {
       if (_stockfish.state.value == StockfishState.ready ||
           _stockfish.state.value == StockfishState.starting) {
@@ -182,7 +182,10 @@ class StockfishManager extends ValueNotifier<StockfishManagerState> {
     await Future.delayed(const Duration(milliseconds: 50));
   }
 
-  void stop() async {
+  Future<void> stop() async {
+    ////////////////////////
+    print("Trying to stop stockfish");
+    ////////////////////////
     if (_stockfish.state.value == StockfishState.disposed ||
         _stockfish.state.value == StockfishState.error) {
       return;

@@ -18,7 +18,8 @@ publish_to: "none" # Remove this line if you wish to publish to pub.dev
 version: 1.0.0+1
 
 environment:
-  sdk: ">=3.0.0 <4.0.0"
+  sdk: '>=3.0.5 <4.0.0'
+  flutter: 3.29.0
 
 # Dependencies specify other packages that your package needs in order to work.
 # To automatically upgrade your package dependencies to the latest versions
@@ -44,7 +45,7 @@ dependencies:
   chess: ^0.8.0
   editable_chess_board: ^0.2.1
   stockfish_chess_engine: ^0.8.2
-  window_manager: ^0.2.7
+  window_manager: ^0.4.3
   equatable: ^2.0.5
 
 dev_dependencies:

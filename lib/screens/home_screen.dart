@@ -76,12 +76,12 @@ class _MyHomePageState extends State<MyHomePage> with WindowListener {
     });
   }
 
-  void _doStartStockfish() async {
-    StockfishManager().start();
+  Future<void> _doStartStockfish() async {
+    await StockfishManager().start();
   }
 
-  void _stopStockfish() async {
-    StockfishManager().stop();
+  Future<void> _stopStockfish() async {
+    await StockfishManager().stop();
   }
 
   @override
@@ -96,8 +96,10 @@ class _MyHomePageState extends State<MyHomePage> with WindowListener {
 
   @override
   void onWindowClose() async {
-    _stopStockfish();
-    await Future.delayed(const Duration(milliseconds: 200));
+    ///////////////////////////////////////
+    print("onWindowClose");
+    ///////////////////////////////////////
+    await _stopStockfish();
     await windowManager.destroy();
   }
 

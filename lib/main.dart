@@ -1,4 +1,5 @@
 import 'package:chess_against_engine/screens/new_game_position_editor.dart';
+import 'package:window_manager/window_manager.dart';
 
 import '../screens/settings_screen.dart';
 import '../screens/new_game_screen.dart';
@@ -10,7 +11,9 @@ import 'package:flutter_i18n/flutter_i18n.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:logger/logger.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await windowManager.ensureInitialized();
   runApp(const MyApp());
 }
 
