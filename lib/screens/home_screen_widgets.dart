@@ -313,35 +313,21 @@ class HomePageEvaluationZone extends StatelessWidget {
       final baseFontSize = constraints.maxWidth * 0.07;
       return Column(
         children: [
-          gameInProgress
-              ? Row(
-                  children: [
-                    I18nText(
-                      'game.show_evaluation',
-                      child: Text(
-                        '',
-                        style: TextStyle(fontSize: baseFontSize),
-                      ),
-                    ),
-                    Checkbox(
-                      value: scoreVisible,
-                      onChanged: onScoreVisibleStatusChanged,
-                      /* 
-                      (newValue) {
-                        if (gameInProgress) {
-                          setState(() {
-                            _scoreVisible = newValue ?? false;
-                          });
-                          if (scoreVisible) {
-                            _startEngineEvaluation();
-                          }
-                        }
-                      },
-                      */
-                    ),
-                  ],
-                )
-              : const SizedBox(),
+          Row(
+            children: [
+              I18nText(
+                'game.show_evaluation',
+                child: Text(
+                  '',
+                  style: TextStyle(fontSize: baseFontSize),
+                ),
+              ),
+              Checkbox(
+                value: scoreVisible,
+                onChanged: onScoreVisibleStatusChanged,
+              ),
+            ],
+          ),
           if (scoreVisible)
             Text(
               score.toString(),

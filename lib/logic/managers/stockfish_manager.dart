@@ -183,9 +183,6 @@ class StockfishManager extends ValueNotifier<StockfishManagerState> {
   }
 
   Future<void> stop() async {
-    ////////////////////////
-    print("Trying to stop stockfish");
-    ////////////////////////
     if (_stockfish.state.value == StockfishState.disposed ||
         _stockfish.state.value == StockfishState.error) {
       return;

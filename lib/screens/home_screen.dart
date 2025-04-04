@@ -96,9 +96,6 @@ class _MyHomePageState extends State<MyHomePage> with WindowListener {
 
   @override
   void onWindowClose() async {
-    ///////////////////////////////////////
-    print("onWindowClose");
-    ///////////////////////////////////////
     await _stopStockfish();
     await windowManager.destroy();
   }
@@ -680,17 +677,15 @@ class _MyHomePageState extends State<MyHomePage> with WindowListener {
             onPromote: _handlePromotion,
             onPromotionCommited: _handlePromotionCommited,
             onScoreVisibleStatusChanged: (newValue) {
-              if (gameState.gameInProgress) {
-                setState(() {
-                  _scoreVisible = newValue ?? false;
-                });
-                if (_scoreVisible) {
-                  StockfishManager().startEvaluation(
-                    positionFen: gameState.positionFen,
-                    thinkingTimeMs:
-                        _prefs.getDouble('engineThinkingTime') ?? 1000.0,
-                  );
-                }
+              setState(() {
+                _scoreVisible = newValue ?? false;
+              });
+              if (_scoreVisible) {
+                StockfishManager().startEvaluation(
+                  positionFen: gameState.positionFen,
+                  thinkingTimeMs:
+                      _prefs.getDouble('engineThinkingTime') ?? 1000.0,
+                );
               }
             },
             onSkillLevelChanged: (newValue) {
